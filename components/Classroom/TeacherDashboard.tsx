@@ -337,7 +337,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
         ) : (
           <>
             <div className="w-full flex gap-8">
-              <div className="flex-1 bg-white rounded-2xl shadow-lg p-8">
+              <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 pb-12">
                 <CodeViewer
                   instructions={exercises[currentRound]?.instructions || []}
                 />
