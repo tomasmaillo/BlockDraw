@@ -79,11 +79,47 @@ export const exercises: Exercise[] = [
     id: '423e4567-e89b-12d3-a456-426614174000',
     name: 'Draw a House 🏠',
     instructions: [
-      'Draw a square for the base',
-      'Draw a triangle on top for the roof',
-      'Add a rectangle for the door',
-      'Add two squares for windows',
-      'Draw a chimney on the roof'
+        {
+          type: 'motion',
+          content: 'Start near the bottom of the screen',
+          children: [
+            '',
+          ]
+        },
+        
+        'Change pen color to black',
+      
+        {
+          type: 'repeat',
+          content: 'Repeat (3)',
+          children: [
+            {
+              type: 'motion',
+              content: 'Move up a little from the previous shape',
+            },
+            'Draw a circle [icon:circle] larger than the last one',
+            {
+              type: 'if',
+              content: 'If this is the 1st circle added:',
+              children: [
+                'Change pen color to brown',
+                'Draw a rectangle [icon:rectangle] attached below the circle',
+                'Change pen color to black',
+              ]
+            },
+            {
+              type: 'if',
+              content: 'If this is the 2nd circle added:',
+              children: [
+                'Change pen color to red',
+                'Draw 3 small circles [icon:circle] around the big circle',
+                'Change pen color to black',
+              ]
+            }
+          ]
+        }
+    
+      
     ],
     validationRules: [
       {

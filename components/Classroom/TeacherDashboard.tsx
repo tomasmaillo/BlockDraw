@@ -6,6 +6,18 @@ import { exercises } from '@/lib/exercises'
 import ParticipantsList from './ParticipantsList'
 import { motion } from 'framer-motion'
 
+// First, let's define the type for a single instruction
+type Instruction = string | {
+  type: string;
+  content: string;
+  children?: Instruction[];
+};
+
+// Update the CodeViewer component's props type
+interface CodeViewerProps {
+  instructions: Instruction[];
+}
+
 const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   const [currentRound, setCurrentRound] = useState(0)
   const [gameStarted, setGameStarted] = useState(false)
@@ -176,22 +188,37 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
     if (!gameStarted) return
 
     const checkAllSubmitted = async () => {
-      const { data: submittedScores } = await supabase
+      console.log('Checking submissions...')
+      const { data: submittedScores, error } = await supabase
         .from('scores')
-        .select('participant_id')
+        .select('*')  // Changed to select all fields for debugging
         .eq('exercise_id', exercises[currentRound].id)
 
-      console.log(
-        'Submitted scores:',
-        submittedScores?.length,
-        'Participants:',
-        participants.length
+      if (error) {
+        console.error('Error fetching scores:', error)
+        return
+      }
+
+      // Get the participant IDs who have submitted
+      const submittedParticipantIds = submittedScores?.map(score => score.participant_id) || []
+      
+      console.log('Debug info:')
+      console.log('Current exercise ID:', exercises[currentRound].id)
+      console.log('Raw submitted scores:', submittedScores)
+      console.log('Submitted participant IDs:', submittedParticipantIds)
+      console.log('Number of submitted scores:', submittedScores?.length)
+      console.log('Number of participants:', participants.length)
+      console.log('Participant IDs:', participants.map(p => p.id))
+
+      // Check if each participant has submitted
+      const hasAllSubmissions = participants.every(participant => 
+        submittedParticipantIds.includes(participant.id)
       )
 
-      if (submittedScores?.length === participants.length) {
-        console.log('All participants have submitted!')
-        setAllSubmitted(true)
-      }
+      console.log('Has all submissions?', hasAllSubmissions)
+      
+      setAllSubmitted(hasAllSubmissions)
+      setCurrentSubmissions(submittedParticipantIds)
     }
 
     // Run checkAllSubmitted immediately when the effect runs
@@ -217,7 +244,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
     return () => {
       supabase.removeChannel(subscription)
     }
-  }, [currentRound, gameStarted, participants.length])
+  }, [currentRound, gameStarted, participants.length, classroomId])
 
   // Add this useEffect to monitor classroom state
   useEffect(() => {
@@ -275,12 +302,6 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
         },
         (payload) => {
           setCurrentSubmissions((prev) => [...prev, payload.new.participant_id])
-          if (
-            [...currentSubmissions, payload.new.participant_id].length ===
-            participants.length
-          ) {
-            setTimeout(advanceToNextRound, 3000)
-          }
         }
       )
       .subscribe()
@@ -318,7 +339,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
             <div className="w-full flex gap-8">
               <div className="flex-1 bg-white rounded-2xl shadow-lg p-8">
                 <CodeViewer
-                  instructions={exercises[currentRound].instructions}
+                  instructions={exercises[currentRound]?.instructions || []}
                 />
               </div>
 
@@ -328,10 +349,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
                   currentSubmissions={currentSubmissions}
                   gameStarted={true}
                 />
-              </div>
-            </div>
-
-            {allSubmitted && (
+                 {allSubmitted && (
               <motion.button
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -340,6 +358,14 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
                 Next Round
               </motion.button>
             )}
+              </div>
+            </div>
+            {/* <div className="text-white mt-4">
+              All Submitted: {allSubmitted ? 'Yes' : 'No'}, 
+              Submissions: {currentSubmissions.length}, 
+              Participants: {participants.length}
+            </div> */}
+           
           </>
         )}
 

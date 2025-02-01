@@ -1,6 +1,62 @@
 import React from 'react';
 import { Circle, Triangle, Slash, ArrowRight, RotateCw, MousePointer, Settings, Play, Repeat, Heart, Square, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Pen, Search } from 'lucide-react';
 
+interface CodeViewerProps {
+  instructions: Instruction[];
+}
+
+const CodeViewer = ({ instructions }: CodeViewerProps) => {
+  return (
+    <div className="pl-4 pr-4 pt-0 rounded-xl">
+      <div className="space-y-0.5">
+        <ScratchInstructions instructions={instructions} />
+      </div>
+    </div>
+  );
+};
+
+interface ScratchInstructionsProps {
+  instructions: Instruction[];
+}
+
+const ScratchInstructions = ({ instructions }: ScratchInstructionsProps) => {
+  const renderInstructions = (instr) => {
+    if (typeof instr === 'string') {
+      return <Block content={instr} type={getBlockType(instr)} nested={false} />;
+    }
+
+    if (instr.type === 'repeat' || instr.type === 'if') {
+      return (
+        <Block content={instr.content} type={instr.type} nested={true}>
+          {instr.children.map((child, idx) => (
+            <div key={idx}>{renderInstructions(child)}</div>
+          ))}
+        </Block>
+      );
+    }
+
+    return <Block content={instr.content} type={instr.type} nested={false} />;
+  };
+
+  const getBlockType = (content) => {
+    if (content.includes('draw')) return 'draw';
+    if (content.includes('set')) return 'variables';
+    if (content.includes('repeat')) return 'repeat';
+    if (content.includes('if')) return 'if';
+    if (content.includes('touching')) return 'events';
+    if (content.includes('pen') || content.includes('color')) return 'pen';
+    return 'looks';
+  };
+
+  return (
+    <div className="space-y-0.5">
+      {instructions.map((instr, idx) => (
+        <div key={idx}>{renderInstructions(instr)}</div>
+      ))}
+    </div>
+  );
+};
+
 const Block = ({ content, type, nested, children }: { content: string, type: string, nested: boolean, children: React.ReactNode }) => {
   const blockStyles = {
     motion: 'bg-blue-500',
@@ -218,48 +274,6 @@ const Block = ({ content, type, nested, children }: { content: string, type: str
   );
 };
 
-
-const ScratchInstructions = ({ instructions }) => {
-  const renderInstructions = (instr) => {
-    if (typeof instr === 'string') {
-      return <Block content={instr} type={getBlockType(instr)} nested={false} />;
-    }
-
-    if (instr.type === 'repeat' || instr.type === 'if') {
-      return (
-        <Block content={instr.content} type={instr.type} nested={true}>
-          {instr.children.map((child, idx) => (
-            <div key={idx}>{renderInstructions(child)}</div>
-          ))}
-        </Block>
-      );
-    }
-
-    return <Block content={instr.content} type={instr.type} nested={false} />;
-  };
-
-  const getBlockType = (content) => {
-    if (content.includes('draw')) return 'draw';
-    if (content.includes('set')) return 'variables';
-    if (content.includes('repeat')) return 'repeat';
-    if (content.includes('if')) return 'if';
-    if (content.includes('touching')) return 'events';
-    if (content.includes('pen') || content.includes('color')) return 'pen';
-    return 'looks';
-  };
-
-  return (
-    <div className="pl-4 pr-4 pt-0 rounded-xl">
-      {/* <h2 className="text-lg font-bold mb-3">Drawing Instructions</h2> */}
-      <div className="space-y-0.5">
-        {instructions.map((instr, idx) => (
-          <div key={idx}>{renderInstructions(instr)}</div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 // Example usage with more visual instructions
 // Example usage with more visual instructions
 const App = () => {
@@ -275,7 +289,6 @@ const App = () => {
     'Change pen color to black',
   
     {
-
       type: 'repeat',
       content: 'Repeat (3)',
       children: [
@@ -303,10 +316,52 @@ const App = () => {
             'Change pen color to black',
           ]
         }
-
       ]
     }
   ];
+
+  const houseInstructions = [
+    {
+      type: 'motion',
+      content: 'Start near the bottom of the screen',
+      children: [
+        '',
+      ]
+    },
+    
+    'Change pen color to black',
+  
+    {
+      type: 'repeat',
+      content: 'Repeat (3)',
+      children: [
+        {
+          type: 'motion',
+          content: 'Move up a little from the previous shape',
+        },
+        'Draw a circle [icon:circle] larger than the last one',
+        {
+          type: 'if',
+          content: 'If this is the 1st circle added:',
+          children: [
+            'Change pen color to brown',
+            'Draw a rectangle [icon:rectangle] attached below the circle',
+            'Change pen color to black',
+          ]
+        },
+        {
+          type: 'if',
+          content: 'If this is the 2nd circle added:',
+          children: [
+            'Change pen color to red',
+            'Draw 3 small circles [icon:circle] around the big circle',
+            'Change pen color to black',
+          ]
+        }
+      ]
+    }
+  ];
+  
 
 
   const treeInstructions = [
