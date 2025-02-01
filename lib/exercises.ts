@@ -12,24 +12,6 @@ export interface Exercise {
 
 export const exercises: Exercise[] = [
   {
-    id: '123e4567-e89b-12d3-a456-426614174000',
-    name: 'Basic Shapes',
-    instructions: ['Draw a circle', 'Draw a square'],
-    validationRules: [
-      { check: 'Check if there is a circular shape' },
-      { check: 'Check if there is a rectangular shape' }
-    ]
-  },
-  {
-    id: '223e4567-e89b-12d3-a456-426614174000',
-    name: 'Advanced Shapes',
-    instructions: ['Draw a triangle', 'Draw a star'],
-    validationRules: [
-      { check: 'Check if there is a triangular shape' },
-      { check: 'Check if there is a star shape' }
-    ]
-  },
-  {
     id: '323e4567-e89b-12d3-a456-426614174000',
     name: 'Draw a Snowman ⛄',
     instructions: [
@@ -68,13 +50,43 @@ export const exercises: Exercise[] = [
         check: 'The image should contain 3 circles arranged vertically from top to bottom, with each circle being larger than the one above it'
       },
       {
-        check: 'The top circle should contain two black dots for eyes and an orange triangle for a nose'
+        check: 'The top circle should contain two black dots for eyes'
+      },
+      {
+        check: 'The top circle should contain an orange triangle for a nose'
       },
       {
         check: 'The middle circle should have two brown lines extending outward horizontally from its sides'
       }
+    ],
+    shortRules: [
+      '3 circles of increasing size',
+      '2 black eyes',
+      '1 orange nose',
+      'Brown stick arms',
     ]
   },
+  
+  {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    name: 'Basic Shapes',
+    instructions: ['Draw a circle', 'Draw a square'],
+    validationRules: [
+      { check: 'Check if there is a circular shape' },
+      { check: 'Check if there is a rectangular shape' }
+    ]
+  },
+  {
+    id: '223e4567-e89b-12d3-a456-426614174000',
+    name: 'Advanced Shapes',
+    instructions: ['Draw a triangle', 'Draw a star'],
+    validationRules: [
+      { check: 'Check if there is a triangular shape' },
+      { check: 'Check if there is a star shape' }
+    ]
+  },
+  
+
   {
     id: '423e4567-e89b-12d3-a456-426614174000',
     name: 'Draw a House 🏠',

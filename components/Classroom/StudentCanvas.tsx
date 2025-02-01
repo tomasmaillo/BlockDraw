@@ -28,7 +28,15 @@ const StudentCanvas = ({
   const [drawingData, setDrawingData] = useState<any[]>([])
   const [drawingHistory, setDrawingHistory] = useState<any[][]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [results, setResults] = useState(null)
+  const [results, setResults] = useState<{
+    score: number
+    total: number
+    timeTaken: number
+    validationResults: Array<{
+      rule: string
+      passed: boolean
+    }>
+  } | null>(null)
   const [startTime] = useState(Date.now())
   const [currentExercise, setCurrentExercise] = useState<string | null>(null)
 
@@ -288,12 +296,14 @@ const StudentCanvas = ({
         exercise_id: data.exerciseId,
         score: data.score,
         time_taken: timeTaken,
+        classroom_id: classroomId,
       })
 
       setResults({
         score: data.score,
         total: data.total,
         timeTaken,
+        validationResults: data.validationResults,
       })
     } catch (error) {
       console.error('Analysis failed:', error)

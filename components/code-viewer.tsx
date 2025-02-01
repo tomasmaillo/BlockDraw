@@ -1,6 +1,13 @@
 import React from 'react';
 import { Circle, Triangle, Slash, ArrowRight, RotateCw, MousePointer, Settings, Play, Repeat, Heart, Square, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Pen, Search } from 'lucide-react';
 
+// Define the Instruction type
+interface Instruction {
+  type: string;
+  content: string;
+  children?: Instruction[];
+}
+
 interface CodeViewerProps {
   instructions: Instruction[];
 }
@@ -405,4 +412,4 @@ const App = () => {
   return <ScratchInstructions instructions={snowmanInstructions} />;
 };
 
-export default App;
+export default CodeViewer;

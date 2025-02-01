@@ -85,7 +85,7 @@ export async function POST(req: Request) {
               text:
                 'Analyze this drawing. For each of the following criteria, check if the drawing meets the criteria:\n' +
                 exercise.validationRules.map((rule) => rule.check).join('\n') +
-                '\n\nReturn a series of TRUE or FALSE values for each of the criteria. Separate each value with a space.'
+                '\n\nThese are human drawings, so be lenient (e.g if the circles are not perfect, still return TRUE). Return a series of TRUE or FALSE values for each of the criteria. Separate each value with a space.'
             },
             {
               type: 'image_url',
@@ -98,18 +98,19 @@ export async function POST(req: Request) {
 
     // Parse OpenAI response and calculate score
     const analysis = response.choices[0].message.content
+    const checks = analysis?.split(' ').filter(Boolean) || []
 
-    console.log('Analysis result:', analysis)
-
-    const passedChecks = analysis?.split(' ').filter(Boolean)
-    const total = exercise.validationRules.length
-    const score = passedChecks?.length ? passedChecks.length / total : 0
+    // Map the checks to validation rules, but use shortRules for display
+    const validationResults = checks.map((check, index) => ({
+      rule: exercise.shortRules[index],
+      passed: check.toUpperCase() === 'TRUE'
+    }))
 
     return NextResponse.json({
       exerciseId: exercise.id,
-      score: score,
-      total: total,
-      details: analysis,
+      score: checks.filter(c => c.toUpperCase() === 'TRUE').length,
+      total: exercise.validationRules.length,
+      validationResults
     })
   } catch (error) {
     console.error('Analysis error:', error)

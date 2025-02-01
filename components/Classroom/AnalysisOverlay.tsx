@@ -10,6 +10,10 @@ const AnalysisOverlay = ({
     score: number
     total: number
     timeTaken: number
+    validationResults: Array<{
+      rule: string
+      passed: boolean
+    }>
   }
   onClose: () => void
 }) => {
@@ -47,9 +51,16 @@ const AnalysisOverlay = ({
                   ? 'Perfect Score! 🎉'
                   : 'Almost there!'}
               </h3>
-              <p className="text-xl mb-2">
-                {results.score}/{results.total} checks passed
-              </p>
+              <div className="space-y-3 mb-6 text-left">
+                {results.validationResults.map((result, index) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <span className="mt-1">
+                      {result.passed ? '✅' : '❌'}
+                    </span>
+                    <p className="text-sm text-gray-600">{result.rule}</p>
+                  </div>
+                ))}
+              </div>
               <p className="text-gray-500 mb-6">
                 Time taken: {results.timeTaken} seconds
               </p>

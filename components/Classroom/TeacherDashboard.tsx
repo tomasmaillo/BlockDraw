@@ -13,11 +13,6 @@ type Instruction = string | {
   children?: Instruction[];
 };
 
-// Update the CodeViewer component's props type
-interface CodeViewerProps {
-  instructions: Instruction[];
-}
-
 const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   const [currentRound, setCurrentRound] = useState(0)
   const [gameStarted, setGameStarted] = useState(false)
