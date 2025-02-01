@@ -8,6 +8,9 @@ const COLORS = [
   { name: 'Green', value: '#00FF00' },
   { name: 'Yellow', value: '#FFFF00' },
   { name: 'Purple', value: '#800080' },
+  { name: 'Orange', value: '#FFA500' },
+  { name: 'Brown', value: '#8B4513' },
+  { name: 'Pink', value: '#FFC0CB' },
 ]
 
 const SIZES = [

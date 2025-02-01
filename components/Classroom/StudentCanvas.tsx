@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import supabase from '@/lib/supabase'
 import AnalysisOverlay from './AnalysisOverlay'
+import { RotateCcw, Trash2, Check } from 'lucide-react'
 
 const COLORS = [
-  { name: 'Red', value: '#FF6B6B' },
-  { name: 'Blue', value: '#4DABF7' },
-  { name: 'Green', value: '#51CF66' },
-  { name: 'Yellow', value: '#FFD43B' },
-  { name: 'Purple', value: '#CC5DE8' },
   { name: 'Black', value: '#000000' },
+  { name: 'Red', value: '#fe5a5a' },
+  { name: 'Blue', value: '#72c1f5' },
+  { name: 'Green', value: '#57d057' },
+
+
+  { name: 'Orange', value: '#f9a25a' },
+  { name: 'Brown', value: '#ae6c3d' }
+
 ]
 
 const BRUSH_SIZE = 6 // Medium size
@@ -150,22 +154,30 @@ const StudentCanvas = ({
 
     // Redraw the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
+    
+    let lastPoint: { x: number; y: number } | null = null
+    
     previousState.forEach((item) => {
       if (item.type === 'dot') {
         ctx.beginPath()
         ctx.fillStyle = item.color
         ctx.arc(item.x, item.y, item.size / 2, 0, Math.PI * 2)
         ctx.fill()
-      } else {
+        lastPoint = null
+      } else if (item.type === 'line') {
         ctx.beginPath()
         ctx.strokeStyle = item.color
         ctx.lineWidth = item.size
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
-        ctx.lineTo(item.x, item.y)
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.moveTo(item.x, item.y)
+        
+        if (lastPoint) {
+          ctx.moveTo(lastPoint.x, lastPoint.y)
+          ctx.lineTo(item.x, item.y)
+          ctx.stroke()
+        }
+        
+        lastPoint = { x: item.x, y: item.y }
       }
     })
   }
@@ -224,8 +236,8 @@ const StudentCanvas = ({
                 <button
                   key={c.value}
                   onClick={() => setColor(c.value)}
-                  className={`w-10 h-10 rounded-full border-2 ${
-                    color === c.value ? 'border-black' : 'border-gray-200'
+                  className={`w-10 h-10 rounded-full border-4 ${
+                    color === c.value ? 'border-yellow-300' : 'border-gray-200'
                   }`}
                   style={{ backgroundColor: c.value }}
                   aria-label={c.name}
@@ -234,33 +246,38 @@ const StudentCanvas = ({
             </div>
           </div>
 
-          <canvas
-            ref={canvasRef}
-            className="touch-none border-2 border-gray-200 rounded-lg w-full bg-white"
-            onMouseDown={startDrawing}
-            onMouseUp={endDrawing}
-            onMouseOut={endDrawing}
-            onMouseMove={draw}
-            onTouchStart={startDrawing}
-            onTouchEnd={endDrawing}
-            onTouchMove={draw}
-          />
+          <div className="relative">
+            <canvas
+              ref={canvasRef}
+              className="touch-none border-2 border-gray-200 rounded-lg w-full bg-white"
+              onMouseDown={startDrawing}
+              onMouseUp={endDrawing}
+              onMouseOut={endDrawing}
+              onMouseMove={draw}
+              onTouchStart={startDrawing}
+              onTouchEnd={endDrawing}
+              onTouchMove={draw}
+            />
+            <div className="absolute top-4 right-4 flex flex-col gap-2">
+              <button
+                onClick={undo}
+                className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={drawingHistory.length === 0}>
+                <RotateCcw className="w-5 h-5 text-gray-600" />
+              </button>
+              <button
+                onClick={clearCanvas}
+                className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-50 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+          </div>
 
-          <div className="flex gap-2 mt-4">
-            <button
-              onClick={undo}
-              className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors"
-              disabled={drawingHistory.length === 0}>
-              Undo
-            </button>
-            <button
-              onClick={clearCanvas}
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition-colors">
-              Clear
-            </button>
+          <div className="mt-4 font-montserrat font-bold">
             <button
               onClick={saveDrawing}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-colors">
+              className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+              <Check className="w-4 h-4" />
               Done
             </button>
           </div>
