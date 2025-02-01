@@ -62,8 +62,14 @@ const StudentCanvas = ({
 
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
-    return () => window.removeEventListener('resize', resizeCanvas)
-  }, [])
+
+    const timeoutId = setTimeout(resizeCanvas, 100)
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas)
+      clearTimeout(timeoutId)
+    }
+  }, [currentExercise])
 
   // Add effect to listen for exercise selection
   useEffect(() => {
@@ -312,7 +318,7 @@ const StudentCanvas = ({
 
   return (
     <>
-      <div className="flex flex-col h-screen w-full bg-purple-500">
+      <div className="flex flex-col h-[calc(100dvh)] w-full bg-purple-500">
         <div className="flex flex-col flex-1 p-4 gap-4">
           <div className="flex flex-wrap gap-2 justify-between shrink-0">
             {COLORS.map((c) => (
@@ -340,7 +346,7 @@ const StudentCanvas = ({
               onTouchEnd={endDrawing}
               onTouchMove={draw}
             />
-            <div className="absolute top-4 right-4 flex flex-col gap-2">
+            <div className="absolute top-4 right-4 flex flex-col gap-2 h-full">
               <button
                 onClick={undo}
                 className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
@@ -365,6 +371,7 @@ const StudentCanvas = ({
           </div>
         </div>
       </div>
+
       <AnalysisOverlay
         isAnalyzing={isAnalyzing}
         results={results || undefined}
