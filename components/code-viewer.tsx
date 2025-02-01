@@ -1,24 +1,29 @@
 import React from 'react';
-import { Circle, Triangle, ArrowRight, RotateCw, MousePointer, Settings, Play, Repeat, Heart, Square, ChevronUp, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Circle, Triangle, Slash, ArrowRight, RotateCw, MousePointer, Settings, Play, Repeat, Heart, Square, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Pen, Search } from 'lucide-react';
 
 const Block = ({ content, type, nested, children }: { content: string, type: string, nested: boolean, children: React.ReactNode }) => {
   const blockStyles = {
     motion: 'bg-blue-500',
-    control: 'bg-orange-500',
+    repeat: 'bg-green-500',
     looks: 'bg-purple-500',
     variables: 'bg-red-500',
     operators: 'bg-green-500',
     events: 'bg-yellow-500',
+    pen: 'bg-pink-500',
+    if: 'bg-orange-500',
+    draw: 'bg-purple-500',
   };
 
   const getIcon = (type) => {
     switch (type) {
       case 'motion': return <ArrowRight className="w-5 h-5" />;
-      case 'control': return <RotateCw className="w-5 h-5" />;
+      case 'repeat': return <RotateCw className="w-5 h-5" />;
       case 'events': return <MousePointer className="w-5 h-5" />;
       case 'variables': return <Settings className="w-5 h-5" />;
-      case 'repeat': return <Repeat className="w-5 h-5" />;
-      default: return <Play className="w-5 h-5" />;
+      case 'pen': return <Pen className="w-5 h-5" />;
+      case 'if': return <Search className="w-5 h-5" />;
+      case 'draw': return <Pen className="w-5 h-5" />;
+      default: return <Pen className="w-5 h-5" />;
     }
   };
 
@@ -26,6 +31,7 @@ const Block = ({ content, type, nested, children }: { content: string, type: str
     switch (shape.toLowerCase()) {
       case 'circle': return <Circle className="w-5 h-5" />;
       case 'triangle': return <Triangle className="w-5 h-5" />;
+      case 'line': return <Slash className="w-5 h-5" />;
       case 'square': return <Square className="w-5 h-5" />;
       case 'up': return <ChevronUp className="w-5 h-5" />;
       case 'down': return <ChevronDown className="w-5 h-5" />;
@@ -38,45 +44,86 @@ const Block = ({ content, type, nested, children }: { content: string, type: str
   const parseContent = (text) => {
     const parts = [];
     let currentText = '';
-    let inBracket = false;
-    let bracketContent = '';
-    let bracketType = '';
 
-    // Add support for [icon:shape] syntax
-    const iconRegex = /\[icon:(.*?)\]/g;
-    text = text.replace(iconRegex, (match, shape) => {
-      if (currentText) parts.push({ type: 'text', content: currentText.trim() });
-      currentText = '';
-      parts.push({ type: 'icon', content: shape.trim() });
-      return '';
+    // Split the text by icon markers
+    const segments = text.split(/(\[icon:[^\]]+\])/);
+    
+    segments.forEach(segment => {
+      if (segment.startsWith('[icon:')) {
+        // Extract icon name from [icon:name]
+        const iconName = segment.slice(6, -1);
+        if (currentText) {
+          parts.push({ type: 'text', content: currentText });
+          currentText = '';
+        }
+        parts.push({ type: 'icon', content: iconName });
+      } else {
+        // Process regular text for other brackets
+        let inBracket = false;
+        let bracketContent = '';
+        let bracketType = '';
+        
+        for (let i = 0; i < segment.length; i++) {
+          const char = segment[i];
+          
+          if (char === '(' || char === '[' || char === '<') {
+            if (currentText) parts.push({ type: 'text', content: currentText });
+            currentText = '';
+            inBracket = true;
+            bracketType = char === '(' ? 'number' : char === '[' ? 'string' : 'boolean';
+            continue;
+          }
+          
+          if ((char === ')' || char === ']' || char === '>') && inBracket) {
+            parts.push({ type: 'bracket', content: bracketContent.trim(), bracketType });
+            bracketContent = '';
+            inBracket = false;
+            continue;
+          }
+          
+          if (inBracket) {
+            bracketContent += char;
+          } else {
+            currentText += char;
+          }
+        }
+      }
     });
 
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
+    if (currentText) {
+      // Process any remaining text for colors
+      const colorMap = {
+        black: '#000000',
+        brown: '#8B4513',
+        orange: '#FFA500',
+        red: '#FF0000',
+        blue: '#0000FF',
+        green: '#008000',
+        yellow: '#FFD700',
+        purple: '#800080',
+        white: '#FFFFFF',
+      };
       
-      if (char === '(' || char === '[' || char === '<') {
-        if (currentText) parts.push({ type: 'text', content: currentText.trim() });
-        currentText = '';
-        inBracket = true;
-        bracketType = char === '(' ? 'number' : char === '[' ? 'string' : 'boolean';
-        continue;
+      const regex = new RegExp(`\\b(${Object.keys(colorMap).join('|')})\\b`, 'g');
+      let lastIndex = 0;
+      let match;
+      
+      while ((match = regex.exec(currentText)) !== null) {
+        if (match.index > lastIndex) {
+          parts.push({ type: 'text', content: currentText.slice(lastIndex, match.index) });
+        }
+        
+        parts.push({ type: 'text', content: match[0] });
+        parts.push({ type: 'color', content: colorMap[match[0].toLowerCase()] });
+        
+        lastIndex = match.index + match[0].length;
       }
       
-      if ((char === ')' || char === ']' || char === '>') && inBracket) {
-        parts.push({ type: 'bracket', content: bracketContent.trim(), bracketType });
-        bracketContent = '';
-        inBracket = false;
-        continue;
-      }
-      
-      if (inBracket) {
-        bracketContent += char;
-      } else {
-        currentText += char;
+      if (lastIndex < currentText.length) {
+        parts.push({ type: 'text', content: currentText.slice(lastIndex) });
       }
     }
-    
-    if (currentText) parts.push({ type: 'text', content: currentText.trim() });
+
     return parts;
   };
 
@@ -96,7 +143,16 @@ const Block = ({ content, type, nested, children }: { content: string, type: str
             );
           }
           if (part.type === 'icon') {
-            return <span key={idx} className="mx-1">{getShapeIcon(part.content)}</span>;
+            return <span key={idx} className="">{getShapeIcon(part.content)}</span>;
+          }
+          if (part.type === 'color') {
+            return (
+              <span 
+                key={idx} 
+                className="inline-block w-4 h-4 rounded-full ml-1" 
+                style={{ backgroundColor: part.content }}
+              />
+            );
           }
           return <span key={idx}>{part.content}</span>;
         })}
@@ -113,12 +169,12 @@ const Block = ({ content, type, nested, children }: { content: string, type: str
 const ScratchInstructions = ({ instructions }) => {
   const renderInstructions = (instr) => {
     if (typeof instr === 'string') {
-      return <Block content={instr} type={getBlockType(instr)} />;
+      return <Block content={instr} type={getBlockType(instr)} nested={false} />;
     }
 
     if (instr.type === 'repeat' || instr.type === 'if') {
       return (
-        <Block content={instr.content} type="control">
+        <Block content={instr.content} type={instr.type} nested={true}>
           {instr.children.map((child, idx) => (
             <div key={idx}>{renderInstructions(child)}</div>
           ))}
@@ -126,14 +182,16 @@ const ScratchInstructions = ({ instructions }) => {
       );
     }
 
-    return <Block content={instr.content} type={instr.type} />;
+    return <Block content={instr.content} type={instr.type} nested={false} />;
   };
 
   const getBlockType = (content) => {
-    if (content.includes('draw') || content.includes('move')) return 'motion';
+    if (content.includes('draw')) return 'draw';
     if (content.includes('set')) return 'variables';
-    if (content.includes('if') || content.includes('repeat')) return 'control';
+    if (content.includes('repeat')) return 'repeat';
+    if (content.includes('if')) return 'if';
     if (content.includes('touching')) return 'events';
+    if (content.includes('pen') || content.includes('color')) return 'pen';
     return 'looks';
   };
 
@@ -150,37 +208,92 @@ const ScratchInstructions = ({ instructions }) => {
 };
 
 // Example usage with more visual instructions
+// Example usage with more visual instructions
 const App = () => {
-  const defaultInstructions = [
-    'set [base_size] to (50)',
-    'set [shrink] to (0.7)',
+  const snowmanInstructions = [
     {
+      type: 'motion',
+      content: 'Start at the top of the screen',
+      children: [
+        '',
+      ]
+    },
+    
+    'Change pen color to black',
+  
+    {
+
       type: 'repeat',
-      content: 'if <touching (screen v)?> then',
+      content: 'Repeat (3)',
       children: [
         {
-          type: 'repeat',
-          content: 'repeat (3)',
+          type: 'motion',
+          content: 'Start below the previous circle',
+        },
+        'Draw a circle [icon:circle] larger than the previous one',
+        {
+          type: 'if',
+          content: 'If this is the 1st circle added:',
           children: [
-            'draw [icon:circle] of size (base_size)',
-            'move [icon:up] a bit',
-            'set [base_size] to (base_size * shrink)'
+            'Draw two dots inside the circle',
+            'Change pen color to orange',
+            'Draw a triangle [icon:triangle] inside the circle',
+            'Change pen color to black',
           ]
         },
-        'draw [icon:triangle] inside the top [icon:circle]',
-        'add two small [icon:circle] for details',
         {
-          type: 'repeat',
-          content: 'repeat (3)',
+          type: 'if',
+          content: 'If this is the 2nd circle added:',
           children: [
-            'draw small [icon:circle] down the middle'
+            'Change pen color to brown',
+            'Draw 2 lines [icon:line] pointing out of the circle on the left and right',
+            'Change pen color to black',
           ]
         }
+
       ]
     }
   ];
 
-  return <ScratchInstructions instructions={defaultInstructions} />;
+  const treeInstructions = [
+    {
+      type: 'motion',
+      content: 'Move to the bottom center of the screen',
+    },
+    'Change pen color to brown',
+    
+    {
+      type: 'motion',
+      content: 'Draw a rectangle [icon:rectangle]',
+    },
+  
+    {
+      type: 'motion',
+      content: 'Move above the rectangle',
+    },
+  
+    'Change pen color to green',
+  
+    {
+      type: 'repeat',
+      content: 'Repeat (3)',
+      children: [
+        {
+          type: 'motion',
+          content: 'Draw a triangle [icon:triangle] wider than the previous one',
+        },
+        {
+          type: 'motion',
+          content: 'Move slightly up',
+        },
+      ],
+    },
+  ];
+
+ 
+  
+
+  return <ScratchInstructions instructions={snowmanInstructions} />;
 };
 
 export default App;
