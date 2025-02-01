@@ -15,7 +15,7 @@ export default function ClassroomPage({ params }: { params: { id: string } }) {
   return (
     <ClassroomProvider classroomId={classroomId}>
       {({ participants, testStarted }) => (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-blue-500">
 
           <main className="max-w-7xl mx-auto px-4 py-8">
             {role === 'teacher' ? (
@@ -25,6 +25,7 @@ export default function ClassroomPage({ params }: { params: { id: string } }) {
                 classroomId={classroomId}
                 studentId={studentId || ''}
               />
+              
             )}
           </main>
         </div>

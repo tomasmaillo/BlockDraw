@@ -22,49 +22,59 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg">
-      <h2 className="text-3xl font-bold text-blue-600 mb-6">
-        Drawing Exercise 🎨
+    <div className="min-h-screen bg-blue-500 p-8 font-montserrat">
+      <h2 className="text-4xl font-bold text-white mb-16 text-center">
+        Join the class! <span className="text-white"></span>
       </h2>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Join Instructions</h3>
-          <QRCodeDisplay classroomId={classroomId} />
+      <div className="flex flex-col items-center space-y-20 max-w-6xl mx-auto">
+        <div className="w-full max-w-xl bg-white border-blue border-2 rounded-2xl p-8 ">
+   
+            <QRCodeDisplay classroomId={classroomId} />
+
         </div>
 
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Select Exercise</h3>
-          <div className="space-y-2">
+        {/* <div className="w-full max-w-lg">
+          <div className="grid grid-cols-2 gap-6">
             {exercises.map((exercise) => (
               <button
                 key={exercise.id}
                 onClick={() => startExercise(exercise)}
-                className="w-full text-left p-3 rounded border hover:bg-gray-50">
+                className="px-6 py-5 text-center rounded-xl bg-white shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 text-gray-700 font-medium border border-gray-100">
                 {exercise.name}
               </button>
             ))}
           </div>
-        </div>
+        </div> */}
 
         {selectedExercise && (
-          <div className="col-span-2">
-            <h3 className="text-xl font-semibold mb-4">Current Exercise</h3>
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8">
+            <h3 className="text-2xl font-medium mb-6 text-gray-800 text-center">
+              Current Exercise
+            </h3>
             <CodeViewer instructions={selectedExercise.instructions} />
           </div>
         )}
 
         {scores.length > 0 && (
-          <div className="col-span-2">
-            <h3 className="text-xl font-semibold mb-4">Scores</h3>
-            <div className="space-y-2">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8">
+            <h3 className="text-2xl font-medium mb-6 text-gray-800 text-center">
+              Scores
+            </h3>
+            <div className="space-y-4">
               {scores.map((score) => (
-                <div key={score.id} className="p-3 bg-gray-50 rounded">
-                  <p>
-                    {score.participant_name}: {score.score}/
-                    {selectedExercise?.validationRules.length} (
-                    {score.time_taken}
-                    s)
+                <div 
+                  key={score.id} 
+                  className="px-6 py-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <p className="text-gray-700 font-medium">
+                    {score.participant_name}{' '}
+                    <span className="text-blue-500 ml-2">
+                      {score.score}/{selectedExercise?.validationRules.length}
+                    </span>
+                    <span className="text-gray-500 text-sm ml-2">
+                      ({score.time_taken}s)
+                    </span>
                   </p>
                 </div>
               ))}
