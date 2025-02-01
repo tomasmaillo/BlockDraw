@@ -85,7 +85,7 @@ export async function POST(req: Request) {
               text:
                 'Analyze this drawing. For each of the following criteria, check if the drawing meets the criteria:\n' +
                 exercise.validationRules.map((rule) => rule.check).join('\n') +
-                '\n\nThese are human drawings, so be lenient (e.g if the circles are not perfect, still return TRUE). Return a series of TRUE or FALSE values for each of the criteria. Separate each value with a space.'
+                '\n\nThese are human drawings (e.g if the circles are not perfect, still return TRUE). Return a series of TRUE or FALSE values for each of the criteria. Separate each value with a space.'
             },
             {
               type: 'image_url',

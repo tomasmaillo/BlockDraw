@@ -13,26 +13,26 @@ export type Database = {
         Row: {
           created_at: string | null
           current_exercise_id: string | null
+          current_round: number | null
           id: string
           join_code: string | null
           test_started: boolean | null
-          current_round: number
         }
         Insert: {
           created_at?: string | null
           current_exercise_id?: string | null
+          current_round?: number | null
           id?: string
           join_code?: string | null
           test_started?: boolean | null
-          current_round?: number
         }
         Update: {
           created_at?: string | null
           current_exercise_id?: string | null
+          current_round?: number | null
           id?: string
           join_code?: string | null
           test_started?: boolean | null
-          current_round?: number
         }
         Relationships: [
           {
@@ -105,6 +105,7 @@ export type Database = {
       }
       scores: {
         Row: {
+          classroom_id: string | null
           completed_at: string | null
           exercise_id: string | null
           id: string
@@ -113,6 +114,7 @@ export type Database = {
           time_taken: number
         }
         Insert: {
+          classroom_id?: string | null
           completed_at?: string | null
           exercise_id?: string | null
           id?: string
@@ -121,6 +123,7 @@ export type Database = {
           time_taken: number
         }
         Update: {
+          classroom_id?: string | null
           completed_at?: string | null
           exercise_id?: string | null
           id?: string
@@ -129,6 +132,13 @@ export type Database = {
           time_taken?: number
         }
         Relationships: [
+          {
+            foreignKeyName: 'scores_classroom_id_fkey'
+            columns: ['classroom_id']
+            isOneToOne: false
+            referencedRelation: 'classrooms'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'scores_exercise_id_fkey'
             columns: ['exercise_id']

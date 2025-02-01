@@ -5,13 +5,7 @@ import CodeViewer from '../code-viewer'
 import { exercises } from '@/lib/exercises'
 import ParticipantsList from './ParticipantsList'
 import { motion } from 'framer-motion'
-
-// First, let's define the type for a single instruction
-type Instruction = string | {
-  type: string;
-  content: string;
-  children?: Instruction[];
-};
+import Podium from '../Podium'
 
 const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   const [currentRound, setCurrentRound] = useState(0)
@@ -20,6 +14,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   const [scores, setScores] = useState<any[]>([])
   const [currentSubmissions, setCurrentSubmissions] = useState<string[]>([])
   const [allSubmitted, setAllSubmitted] = useState(false)
+  const [showPodium, setShowPodium] = useState(false)
 
   const startGame = async () => {
     console.log('Starting game...') // Debug log
@@ -47,7 +42,12 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
     }
   }
 
-  const advanceToNextRound = async () => {
+  const handleNextRound = () => {
+    setShowPodium(true)
+  }
+
+  const proceedToNextRound = async () => {
+    setShowPodium(false)
     const nextRound = currentRound + 1
 
     if (nextRound >= exercises.length) {
@@ -182,43 +182,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   useEffect(() => {
     if (!gameStarted) return
 
-    const checkAllSubmitted = async () => {
-      console.log('Checking submissions...')
-      const { data: submittedScores, error } = await supabase
-        .from('scores')
-        .select('*')  // Changed to select all fields for debugging
-        .eq('exercise_id', exercises[currentRound].id)
-
-      if (error) {
-        console.error('Error fetching scores:', error)
-        return
-      }
-
-      // Get the participant IDs who have submitted
-      const submittedParticipantIds = submittedScores?.map(score => score.participant_id) || []
-      
-      console.log('Debug info:')
-      console.log('Current exercise ID:', exercises[currentRound].id)
-      console.log('Raw submitted scores:', submittedScores)
-      console.log('Submitted participant IDs:', submittedParticipantIds)
-      console.log('Number of submitted scores:', submittedScores?.length)
-      console.log('Number of participants:', participants.length)
-      console.log('Participant IDs:', participants.map(p => p.id))
-
-      // Check if each participant has submitted
-      const hasAllSubmissions = participants.every(participant => 
-        submittedParticipantIds.includes(participant.id)
-      )
-
-      console.log('Has all submissions?', hasAllSubmissions)
-      
-      setAllSubmitted(hasAllSubmissions)
-      setCurrentSubmissions(submittedParticipantIds)
-    }
-
-    // Run checkAllSubmitted immediately when the effect runs
-    checkAllSubmitted()
-
+    // Set up real-time subscription for scores
     const subscription = supabase
       .channel('scores_channel')
       .on(
@@ -230,16 +194,51 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
           filter: `exercise_id=eq.${exercises[currentRound].id}`,
         },
         (payload) => {
-          console.log('New score submitted:', payload)
-          checkAllSubmitted()
+          // Only process events for our classroom
+          if (payload.new.classroom_id === classroomId) {
+            setCurrentSubmissions((prev) => {
+              const newSubmissions = [...prev, payload.new.participant_id]
+              const hasAllSubmissions = participants.every((participant) =>
+                newSubmissions.includes(participant.id)
+              )
+              setAllSubmitted(hasAllSubmissions)
+              return newSubmissions
+            })
+          }
         }
       )
       .subscribe()
 
+    // Initial fetch of submissions for current round
+    const fetchCurrentSubmissions = async () => {
+      const { data, error } = await supabase
+        .from('scores')
+        .select('participant_id')
+        .eq('exercise_id', exercises[currentRound].id)
+        .eq('classroom_id', classroomId)
+
+      if (error) {
+        console.error('Error fetching scores:', error)
+        return
+      }
+
+      if (data) {
+        const submittedIds = data.map((score) => score.participant_id)
+        setCurrentSubmissions(submittedIds)
+        // Check if all participants have submitted
+        const hasAllSubmissions = participants.every((participant) =>
+          submittedIds.includes(participant.id)
+        )
+        setAllSubmitted(hasAllSubmissions)
+      }
+    }
+
+    fetchCurrentSubmissions()
+
     return () => {
       supabase.removeChannel(subscription)
     }
-  }, [currentRound, gameStarted, participants.length, classroomId])
+  }, [currentRound, gameStarted, participants, classroomId])
 
   // Add this useEffect to monitor classroom state
   useEffect(() => {
@@ -267,44 +266,6 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
       supabase.removeChannel(channel)
     }
   }, [classroomId])
-
-  useEffect(() => {
-    if (!gameStarted) return
-
-    // Fetch existing submissions for current round
-    const fetchCurrentSubmissions = async () => {
-      const { data } = await supabase
-        .from('scores')
-        .select('participant_id')
-        .eq('exercise_id', exercises[currentRound].id)
-
-      if (data) {
-        setCurrentSubmissions(data.map((score) => score.participant_id))
-      }
-    }
-
-    fetchCurrentSubmissions()
-
-    const subscription = supabase
-      .channel('scores_channel')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'scores',
-          filter: `exercise_id=eq.${exercises[currentRound].id}`,
-        },
-        (payload) => {
-          setCurrentSubmissions((prev) => [...prev, payload.new.participant_id])
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(subscription)
-    }
-  }, [currentRound, gameStarted, participants.length])
 
   return (
     <div className="min-h-screen bg-blue-500 p-8 font-montserrat">
@@ -344,52 +305,29 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
                   currentSubmissions={currentSubmissions}
                   gameStarted={true}
                 />
-                 {allSubmitted && (
-              <motion.button
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                onClick={advanceToNextRound}
-                className="mt-8 px-8 py-4 text-xl font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors mx-auto block">
-                Next Round
-              </motion.button>
-            )}
+                {allSubmitted && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={handleNextRound}
+                    className="mt-8 px-8 py-4 text-xl font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors mx-auto block">
+                    Next Round
+                  </motion.button>
+                )}
               </div>
             </div>
-            {/* <div className="text-white mt-4">
-              All Submitted: {allSubmitted ? 'Yes' : 'No'}, 
-              Submissions: {currentSubmissions.length}, 
-              Participants: {participants.length}
-            </div> */}
-           
           </>
         )}
-
-        {scores.length > 0 && (
-          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8">
-            <h3 className="text-2xl font-medium mb-6 text-gray-800 text-center">
-              Scores
-            </h3>
-            <div className="space-y-4">
-              {scores.map((score) => (
-                <div
-                  key={score.id}
-                  className="px-6 py-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                  <p className="text-gray-700 font-medium">
-                    {score.participant_name}{' '}
-                    <span className="text-blue-500 ml-2">
-                      {score.score}/
-                      {exercises[currentRound]?.validationRules.length}
-                    </span>
-                    <span className="text-gray-500 text-sm ml-2">
-                      ({score.time_taken}s)
-                    </span>
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
+
+      {showPodium && (
+        <Podium
+          scores={scores.filter(
+            (s) => s.exercise_id === exercises[currentRound].id
+          )}
+          onContinue={proceedToNextRound}
+        />
+      )}
     </div>
   )
 }
