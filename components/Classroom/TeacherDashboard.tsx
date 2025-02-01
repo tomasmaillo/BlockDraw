@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 import supabase from '@/lib/supabase'
 import QRCodeDisplay from '../QRCode'
 import CodeViewer from '../code-viewer'
-import { exercises, Exercise } from '@/lib/exercises'
-import { Users } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { exercises } from '@/lib/exercises'
+import ParticipantsList from './ParticipantsList'
 
 const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   const [currentRound, setCurrentRound] = useState(0)
@@ -22,7 +21,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
         .update({
           test_started: true,
           current_exercise_id: exercises[0].id,
-          current_round: 0
+          current_round: 0,
         })
         .eq('id', classroomId)
         .select()
@@ -42,7 +41,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
 
   const advanceToNextRound = async () => {
     const nextRound = currentRound + 1
-    
+
     if (nextRound >= exercises.length) {
       // Game is over
       const { error } = await supabase
@@ -50,10 +49,10 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
         .update({
           test_started: false,
           current_exercise_id: null,
-          current_round: 0
+          current_round: 0,
         })
         .eq('id', classroomId)
-      
+
       setGameStarted(false)
       setCurrentRound(0)
       return
@@ -63,7 +62,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
       .from('classrooms')
       .update({
         current_exercise_id: exercises[nextRound].id,
-        current_round: nextRound
+        current_round: nextRound,
       })
       .eq('id', classroomId)
 
@@ -252,7 +251,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
         .eq('exercise_id', exercises[currentRound].id)
 
       if (data) {
-        setCurrentSubmissions(data.map(score => score.participant_id))
+        setCurrentSubmissions(data.map((score) => score.participant_id))
       }
     }
 
@@ -284,65 +283,52 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
 
   return (
     <div className="min-h-screen bg-blue-500 p-8 font-montserrat">
-      <h2 className="text-4xl font-bold text-white mb-2 text-center">
-        {gameStarted ? `Round ${currentRound + 1} of ${exercises.length}` : 'Join the class!'}
+      <h2 className="text-4xl font-bold text-white mb-8 text-center">
+        {gameStarted
+          ? `Round ${currentRound + 1} of ${exercises.length}`
+          : 'Join the class!'}
       </h2>
 
-      <div className="flex flex-col items-center space-y-20 max-w-7xl mx-auto px-4">
+      <div className="flex flex-row items-center space-y-20 max-w-7xl mx-auto px-4">
         {!gameStarted ? (
           <>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="w-full max-w-xl bg-white border-blue border-2 rounded-2xl p-8">
-              <div className="flex items-center gap-2 mb-4">
-                <Users className="w-6 h-6 text-blue-500" />
-                <h3 className="text-xl font-semibold text-gray-800">
-                  Connected Students
-                </h3>
-              </div>
-              <AnimatePresence>
-                {participants.map((participant, index) => (
-                  <motion.div
-                    key={participant.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-gray-700">{participant.name}</span>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-              {participants.length === 0 && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-gray-500 text-center py-4">
-                  Waiting for students to join...
-                </motion.p>
-              )}
-            </motion.div>
-
-            <div className="w-full max-w-xl bg-white border-blue border-2 rounded-2xl p-8">
+            <div className="w-full max-w-xl bg-white border-blue border-2 rounded-2xl p-8 flex flex-col items-center">
               <QRCodeDisplay classroomId={classroomId} />
+
+              <button
+                onClick={startGame}
+                className="px-8 py-4 text-xl font-bold text-white bg-green-500 rounded-full mt-12 hover:bg-green-600 transition-colors">
+                Start Game
+              </button>
             </div>
 
-            <button
-              onClick={startGame}
-              className="px-8 py-4 text-xl font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors">
-              Start Game
-            </button>
+            <ParticipantsList participants={participants} />
           </>
         ) : (
           <>
             <div className="w-full flex gap-8">
               <div className="flex-1 bg-white rounded-2xl shadow-lg p-8">
-                <CodeViewer instructions={exercises[currentRound].instructions} />
+                <CodeViewer
+                  instructions={exercises[currentRound].instructions}
+                />
               </div>
 
-              <motion.div
+              <div className="w-80">
+                <ParticipantsList
+                  participants={participants}
+                  currentSubmissions={currentSubmissions}
+                  gameStarted={true}
+                />
+              </div>
+            </div>
+            {/* Debug info */}
+            <div className="text-white mt-4">
+              All Submitted: {allSubmitted ? 'Yes' : 'No'}, 
+              Submissions: {currentSubmissions.length}, 
+              Participants: {participants.length}
+            </div>
+            {allSubmitted && (
+              <motion.button
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="w-80 bg-white border-blue border-2 rounded-2xl p-8 h-fit">
@@ -406,7 +392,8 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
                   <p className="text-gray-700 font-medium">
                     {score.participant_name}{' '}
                     <span className="text-blue-500 ml-2">
-                      {score.score}/{exercises[currentRound]?.validationRules.length}
+                      {score.score}/
+                      {exercises[currentRound]?.validationRules.length}
                     </span>
                     <span className="text-gray-500 text-sm ml-2">
                       ({score.time_taken}s)

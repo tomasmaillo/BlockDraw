@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import supabase from '@/lib/supabase'
-
+import Image from 'next/image'
+import { Users } from 'lucide-react'
+import { PlusCircle } from 'lucide-react'
 export default function JoinClassroom() {
   const [joinCode, setJoinCode] = useState('')
   const router = useRouter()
@@ -64,24 +66,35 @@ export default function JoinClassroom() {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white p-6 rounded shadow">
-      <h2 className="text-2xl font-bold mb-4">Welcome!</h2>
+    <div className="max-w-md mx-auto bg-white p-8 rounded-[2rem] shadow-lg">
+      <Image src="/logo.svg" alt="BlockDraw" width={300} height={300} className="mb-8" />
+
       <button
         onClick={createClassroom}
-        className="w-full bg-green-500 text-white py-2 rounded mb-4">
+        className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-full mb-4 text-lg font-medium flex items-center justify-center gap-2 transition-colors">
+        <PlusCircle size={24} />
         Create Classroom
       </button>
-      <div>
+
+      <div className="relative my-8 text-center">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-200"></div>
+        </div>
+        <span className="relative px-4 bg-white text-gray-500 text-lg">or</span>
+      </div>
+
+      <div className="space-y-4">
         <input
           type="text"
           placeholder="Enter Class Code"
           value={joinCode}
           onChange={(e) => setJoinCode(e.target.value)}
-          className="w-full border border-gray-300 rounded px-3 py-2 mb-2"
-        />
+            className="w-full border-2 border-gray-200 rounded-full px-6 py-3 text-lg focus:outline-none focus:border-blue-400 transition-colors"
+          />
         <button
           onClick={joinClassroom}
-          className="w-full bg-blue-500 text-white py-2 rounded">
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-full text-lg font-medium flex items-center justify-center gap-2 transition-colors">
+          <Users size={24} />
           Join Classroom
         </button>
       </div>
