@@ -28,6 +28,7 @@ const StudentCanvas = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [results, setResults] = useState(null)
   const [startTime] = useState(Date.now())
+  const [currentExercise, setCurrentExercise] = useState<string | null>(null)
 
   // Set canvas size on mount and window resize
   useEffect(() => {
@@ -47,6 +48,44 @@ const StudentCanvas = ({
     window.addEventListener('resize', resizeCanvas)
     return () => window.removeEventListener('resize', resizeCanvas)
   }, [])
+
+  // Add effect to listen for exercise selection
+  useEffect(() => {
+    const fetchExercise = async () => {
+      const { data } = await supabase
+        .from('classrooms')
+        .select('current_exercise_id, test_started')
+        .eq('id', classroomId)
+        .single()
+
+      if (data) {
+        setCurrentExercise(data.current_exercise_id)
+      }
+    }
+
+    fetchExercise()
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('classroom_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'classrooms',
+          filter: `id=eq.${classroomId}`,
+        },
+        (payload) => {
+          setCurrentExercise(payload.new.current_exercise_id)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [classroomId])
 
   const startDrawing = (e: React.TouchEvent | React.MouseEvent) => {
     setIsDrawing(true)
@@ -172,23 +211,42 @@ const StudentCanvas = ({
 
   const saveDrawing = useCallback(async () => {
     setIsAnalyzing(true)
-
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const imageData = canvas.toDataURL('image/png')
-
     try {
-      // Send to your API endpoint that will handle OpenAI analysis
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            throw new Error('Failed to create blob')
+          }
+          resolve(blob)
+        }, 'image/png')
+      })
+
+      // Create FormData and append all required fields
+      const formData = new FormData()
+      formData.append('image', blob, 'drawing.png')
+      formData.append('classroomId', classroomId)
+
+      // Log for debugging
+      console.log('Sending data:', {
+        classroomId,
+        blobSize: blob.size,
+      })
+
+      // Send to API
       const response = await fetch('/api/analyze-drawing', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: imageData,
-          studentId,
-          classroomId,
-        }),
+        body: formData,
       })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('API Error:', errorData)
+        throw new Error(errorData.error || 'Failed to analyze drawing')
+      }
 
       const data = await response.json()
 
@@ -212,7 +270,21 @@ const StudentCanvas = ({
     } finally {
       setIsAnalyzing(false)
     }
-  }, [drawingData, studentId, classroomId, startTime])
+  }, [classroomId, studentId, startTime])
+
+  // Add a loading state when no exercise is selected
+  if (!currentExercise) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center p-8 bg-white rounded-lg shadow">
+          <h2 className="text-xl font-bold mb-2">Waiting for teacher...</h2>
+          <p className="text-gray-600">
+            Please wait while the teacher selects an exercise.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
