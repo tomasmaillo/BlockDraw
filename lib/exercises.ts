@@ -1,16 +1,36 @@
-export type Exercise = {
+import { v4 as uuidv4 } from 'uuid'
+
+export interface Exercise {
   id: string
   name: string
   instructions: string[]
-  validationRules: {
-    description: string
+  validationRules: Array<{
     check: string
-  }[]
+    // ... other validation rule properties
+  }>
 }
 
 export const exercises: Exercise[] = [
   {
-    id: 'snowman',
+    id: '1',
+    name: 'Basic Shapes',
+    instructions: ['Draw a circle', 'Draw a square'],
+    validationRules: [
+      { check: 'Check if there is a circular shape' },
+      { check: 'Check if there is a rectangular shape' }
+    ]
+  },
+  {
+    id: '2',
+    name: 'Advanced Shapes',
+    instructions: ['Draw a triangle', 'Draw a star'],
+    validationRules: [
+      { check: 'Check if there is a triangular shape' },
+      { check: 'Check if there is a star shape' }
+    ]
+  },
+  {
+    id: '123e4567-e89b-12d3-a456-426614174000',
     name: 'Draw a Snowman ⛄',
     instructions: [
       'Start at the top of the screen',
@@ -45,21 +65,18 @@ export const exercises: Exercise[] = [
     ],
     validationRules: [
       {
-        description: 'Has 3 circles stacked vertically',
         check: 'The image should contain 3 circles arranged vertically from top to bottom, with each circle being larger than the one above it'
       },
       {
-        description: 'Has face features',
         check: 'The top circle should contain two black dots for eyes and an orange triangle for a nose'
       },
       {
-        description: 'Has arms',
         check: 'The middle circle should have two brown lines extending outward horizontally from its sides'
       }
     ]
   },
   {
-    id: 'house',
+    id: '987fcdeb-51a2-43d7-9012-345678901234',
     name: 'Draw a House 🏠',
     instructions: [
       'Draw a square for the base',

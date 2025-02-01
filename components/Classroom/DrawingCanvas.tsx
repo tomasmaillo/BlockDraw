@@ -19,7 +19,7 @@ const SIZES = [
   { name: 'Large', value: 10 },
 ]
 
-let socket: SocketIOClient.Socket
+
 
 const DrawingCanvas = ({ classroomId }: { classroomId: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)

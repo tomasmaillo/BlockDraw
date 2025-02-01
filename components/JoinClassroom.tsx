@@ -10,14 +10,28 @@ export default function JoinClassroom() {
   const router = useRouter()
 
   const createClassroom = async () => {
-    const { data } = await supabase
-      .from('classrooms')
-      .insert([{ test_started: false }])
-      .select()
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('classrooms')
+        .insert([
+          {
+            test_started: false,
+            current_exercise_id: null,
+          },
+        ])
+        .select()
+        .single()
 
-    if (data) {
-      router.push(`/classroom/${data.id}?role=teacher`)
+      if (error) {
+        console.error('Failed to create classroom:', error)
+        return
+      }
+
+      if (data) {
+        router.push(`/classroom/${data.id}?role=teacher`)
+      }
+    } catch (error) {
+      console.error('Failed to create classroom:', error)
     }
   }
 

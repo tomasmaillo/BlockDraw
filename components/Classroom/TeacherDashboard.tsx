@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import supabase from '@/lib/supabase'
 import QRCodeDisplay from '../QRCode'
 import CodeViewer from '../code-viewer'
@@ -11,15 +11,72 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   const [scores, setScores] = useState<any[]>([])
 
   const startExercise = async (exercise: Exercise) => {
-    await supabase
-      .from('classrooms')
-      .update({
-        test_started: true,
-        current_exercise: exercise.id,
+    try {
+      console.log('Starting exercise:', {
+        exerciseId: exercise.id,
+        classroomId,
       })
-      .eq('id', classroomId)
-    setSelectedExercise(exercise)
+
+      const { error } = await supabase
+        .from('classrooms')
+        .update({
+          test_started: true,
+          current_exercise_id: exercise.id,
+        })
+        .eq('id', classroomId)
+
+      if (error) {
+        console.error('Failed to start exercise:', error)
+        return
+      }
+
+      setSelectedExercise(exercise)
+    } catch (error) {
+      console.error('Failed to start exercise:', error)
+    }
   }
+
+  useEffect(() => {
+    const scoresChannel = supabase
+      .channel('scores')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'scores',
+          filter: `classroom_id=eq.${classroomId}`,
+        },
+        (payload) => {
+          setScores((prev) => [...prev, payload.new])
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(scoresChannel)
+    }
+  }, [classroomId])
+
+  useEffect(() => {
+    const syncExercises = async () => {
+      const { error } = await supabase.from('exercises').upsert(
+        exercises.map((ex) => ({
+          id: ex.id,
+          name: ex.name,
+          instructions: ex.instructions,
+          validation_rules: ex.validationRules,
+        })),
+        { onConflict: 'id' }
+      )
+
+      if (error) {
+        console.error('Failed to sync exercises:', error)
+      }
+    }
+
+    syncExercises()
+  }, [])
 
   return (
     <div className="min-h-screen bg-blue-500 p-8 font-montserrat">
