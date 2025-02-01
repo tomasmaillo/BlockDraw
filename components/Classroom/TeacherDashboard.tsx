@@ -7,36 +7,71 @@ import { Users } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(
-    null
-  )
-  const [scores, setScores] = useState<any[]>([])
+  const [currentRound, setCurrentRound] = useState(0)
+  const [gameStarted, setGameStarted] = useState(false)
   const [participants, setParticipants] = useState<any[]>([])
+  const [scores, setScores] = useState<any[]>([])
+  const [currentSubmissions, setCurrentSubmissions] = useState<string[]>([])
 
-  const startExercise = async (exercise: Exercise) => {
+  const startGame = async () => {
+    console.log('Starting game...') // Debug log
     try {
-      console.log('Starting exercise:', {
-        exerciseId: exercise.id,
-        classroomId,
-      })
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('classrooms')
         .update({
           test_started: true,
-          current_exercise_id: exercise.id,
+          current_exercise_id: exercises[0].id,
+          current_round: 0
         })
         .eq('id', classroomId)
+        .select()
 
       if (error) {
-        console.error('Failed to start exercise:', error)
+        console.error('Failed to start game:', error)
         return
       }
 
-      setSelectedExercise(exercise)
+      console.log('Game started successfully:', data) // Debug log
+      setGameStarted(true)
+      setCurrentRound(0)
     } catch (error) {
-      console.error('Failed to start exercise:', error)
+      console.error('Failed to start game:', error)
     }
+  }
+
+  const advanceToNextRound = async () => {
+    const nextRound = currentRound + 1
+    
+    if (nextRound >= exercises.length) {
+      // Game is over
+      const { error } = await supabase
+        .from('classrooms')
+        .update({
+          test_started: false,
+          current_exercise_id: null,
+          current_round: 0
+        })
+        .eq('id', classroomId)
+      
+      setGameStarted(false)
+      setCurrentRound(0)
+      return
+    }
+
+    const { error } = await supabase
+      .from('classrooms')
+      .update({
+        current_exercise_id: exercises[nextRound].id,
+        current_round: nextRound
+      })
+      .eq('id', classroomId)
+
+    if (error) {
+      console.error('Failed to advance round:', error)
+      return
+    }
+
+    setCurrentRound(nextRound)
   }
 
   useEffect(() => {
@@ -136,71 +171,197 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
     }
   }, [classroomId])
 
+  useEffect(() => {
+    if (!gameStarted) return
+
+    const checkAllSubmitted = async () => {
+      const { data: submittedScores } = await supabase
+        .from('scores')
+        .select('participant_id')
+        .eq('exercise_id', exercises[currentRound].id)
+
+      if (submittedScores?.length === participants.length) {
+        // All participants have submitted
+        setTimeout(advanceToNextRound, 3000) // Wait 3 seconds before next round
+      }
+    }
+
+    const subscription = supabase
+      .channel('scores_channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'scores',
+        },
+        checkAllSubmitted
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscription)
+    }
+  }, [currentRound, gameStarted, participants.length])
+
+  // Add this useEffect to monitor classroom state
+  useEffect(() => {
+    const channel = supabase
+      .channel('classroom_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'classrooms',
+          filter: `id=eq.${classroomId}`,
+        },
+        (payload) => {
+          console.log('Classroom state changed:', payload) // Debug log
+          if (payload.new.test_started) {
+            setGameStarted(true)
+            setCurrentRound(payload.new.current_round || 0)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [classroomId])
+
+  useEffect(() => {
+    if (!gameStarted) return
+
+    // Fetch existing submissions for current round
+    const fetchCurrentSubmissions = async () => {
+      const { data } = await supabase
+        .from('scores')
+        .select('participant_id')
+        .eq('exercise_id', exercises[currentRound].id)
+
+      if (data) {
+        setCurrentSubmissions(data.map(score => score.participant_id))
+      }
+    }
+
+    fetchCurrentSubmissions()
+
+    const subscription = supabase
+      .channel('scores_channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'scores',
+        },
+        (payload) => {
+          setCurrentSubmissions(prev => [...prev, payload.new.participant_id])
+          checkAllSubmitted()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscription)
+    }
+  }, [currentRound, gameStarted])
+
   return (
     <div className="min-h-screen bg-blue-500 p-8 font-montserrat">
-      <h2 className="text-4xl font-bold text-white mb-16 text-center">
-        Join the class! <span className="text-white"></span>
+      <h2 className="text-4xl font-bold text-white mb-2 text-center">
+        {gameStarted ? `Round ${currentRound + 1} of ${exercises.length}` : 'Join the class!'}
       </h2>
 
-      <div className="flex flex-col items-center space-y-20 max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-xl bg-white border-blue border-2 rounded-2xl p-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-6 h-6 text-blue-500" />
-            <h3 className="text-xl font-semibold text-gray-800">
-              Connected Students
-            </h3>
-          </div>
-          <AnimatePresence>
-            {participants.map((participant, index) => (
+      <div className="flex flex-col items-center space-y-20 max-w-7xl mx-auto px-4">
+        {!gameStarted ? (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full max-w-xl bg-white border-blue border-2 rounded-2xl p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-6 h-6 text-blue-500" />
+                <h3 className="text-xl font-semibold text-gray-800">
+                  Connected Students
+                </h3>
+              </div>
+              <AnimatePresence>
+                {participants.map((participant, index) => (
+                  <motion.div
+                    key={participant.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-gray-700">{participant.name}</span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              {participants.length === 0 && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-gray-500 text-center py-4">
+                  Waiting for students to join...
+                </motion.p>
+              )}
+            </motion.div>
+
+            <div className="w-full max-w-xl bg-white border-blue border-2 rounded-2xl p-8">
+              <QRCodeDisplay classroomId={classroomId} />
+            </div>
+
+            <button
+              onClick={startGame}
+              className="px-8 py-4 text-xl font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors">
+              Start Game
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="w-full flex gap-8">
+              <div className="flex-1 bg-white rounded-2xl shadow-lg p-8">
+                <CodeViewer instructions={exercises[currentRound].instructions} />
+              </div>
+
               <motion.div
-                key={participant.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span className="text-gray-700">{participant.name}</span>
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-80 bg-white border-blue border-2 rounded-2xl p-8 h-fit">
+                <div className="flex items-center gap-2 mb-4">
+                  <Users className="w-6 h-6 text-blue-500" />
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    Connected Students
+                  </h3>
+                </div>
+                <AnimatePresence>
+                  {participants.map((participant, index) => (
+                    <motion.div
+                      key={participant.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50">
+                      <div 
+                        className={`w-2 h-2 rounded-full ${
+                          currentSubmissions.includes(participant.id)
+                            ? 'bg-green-500'
+                            : 'bg-orange-500'
+                        }`} 
+                      />
+                      <span className="text-gray-700">{participant.name} {currentSubmissions.includes(participant.id) ? 'submitted!✅' : 'hasn\'t submitted yet!'}</span>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </motion.div>
-            ))}
-          </AnimatePresence>
-          {participants.length === 0 && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-gray-500 text-center py-4">
-              Waiting for students to join...
-            </motion.p>
-          )}
-        </motion.div>
-
-        <div className="w-full max-w-xl bg-white border-blue border-2 rounded-2xl p-8">
-          <QRCodeDisplay classroomId={classroomId} />
-        </div>
-
-        <div className="w-full max-w-lg">
-          <div className="grid grid-cols-2 gap-6">
-            {exercises.map((exercise) => (
-              <button
-                key={exercise.id}
-                onClick={() => startExercise(exercise)}
-                className="px-6 py-5 text-center rounded-xl bg-white shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 text-gray-700 font-medium border border-gray-100">
-                {exercise.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {selectedExercise && (
-          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8">
-            <h3 className="text-2xl font-medium mb-6 text-gray-800 text-center">
-              Current Exercise
-            </h3>
-            <CodeViewer instructions={selectedExercise.instructions} />
-          </div>
+            </div>
+          </>
         )}
 
         {scores.length > 0 && (
@@ -216,7 +377,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
                   <p className="text-gray-700 font-medium">
                     {score.participant_name}{' '}
                     <span className="text-blue-500 ml-2">
-                      {score.score}/{selectedExercise?.validationRules.length}
+                      {score.score}/{exercises[currentRound]?.validationRules.length}
                     </span>
                     <span className="text-gray-500 text-sm ml-2">
                       ({score.time_taken}s)

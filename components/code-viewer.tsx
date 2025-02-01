@@ -16,27 +16,27 @@ const Block = ({ content, type, nested, children }: { content: string, type: str
 
   const getIcon = (type) => {
     switch (type) {
-      case 'motion': return <ArrowRight className="w-5 h-5" />;
-      case 'repeat': return <RotateCw className="w-5 h-5" />;
-      case 'events': return <MousePointer className="w-5 h-5" />;
-      case 'variables': return <Settings className="w-5 h-5" />;
-      case 'pen': return <Pen className="w-5 h-5" />;
-      case 'if': return <Search className="w-5 h-5" />;
-      case 'draw': return <Pen className="w-5 h-5" />;
-      default: return <Pen className="w-5 h-5" />;
+      case 'motion': return <ArrowRight className="w-4 h-4" />;
+      case 'repeat': return <RotateCw className="w-4 h-4" />;
+      case 'events': return <MousePointer className="w-4 h-4" />;
+      case 'variables': return <Settings className="w-4 h-4" />;
+      case 'pen': return <Pen className="w-4 h-4" />;
+      case 'if': return <Search className="w-4 h-4" />;
+      case 'draw': return <Pen className="w-4 h-4" />;
+      default: return <Pen className="w-4 h-4" />;
     }
   };
 
   const getShapeIcon = (shape) => {
     switch (shape.toLowerCase()) {
-      case 'circle': return <Circle className="w-5 h-5" />;
-      case 'triangle': return <Triangle className="w-5 h-5" />;
-      case 'line': return <Slash className="w-5 h-5" />;
-      case 'square': return <Square className="w-5 h-5" />;
-      case 'up': return <ChevronUp className="w-5 h-5" />;
-      case 'down': return <ChevronDown className="w-5 h-5" />;
-      case 'left': return <ChevronLeft className="w-5 h-5" />;
-      case 'right': return <ChevronRight className="w-5 h-5" />;
+      case 'circle': return <Circle className="w-4 h-4" strokeWidth={3}/>;
+      case 'triangle': return <Triangle className="w-4 h-4" strokeWidth={3}/>;
+      case 'line': return <Slash className="w-4 h-4" strokeWidth={3}/>;
+      case 'square': return <Square className="w-4 h-4" strokeWidth={3}/>;
+      case 'up': return <ChevronUp className="w-4 h-4" strokeWidth={2}/>;
+      case 'down': return <ChevronDown className="w-4 h-4" strokeWidth={2}/>;
+      case 'left': return <ChevronLeft className="w-4 h-4" strokeWidth={2}/>;
+      case 'right': return <ChevronRight className="w-4 h-4" strokeWidth={2}/>;
       default: return null;
     }
   };
@@ -130,83 +130,84 @@ const Block = ({ content, type, nested, children }: { content: string, type: str
   return (
     <div className={`
       relative 
-      -mb-3
+      -mb-2
     `}>
       {/* Main block */}
       <div className={`
         ${blockStyles[type] || 'bg-gray-500'} 
-        rounded-md p-3 text-white font-medium shadow-md
-        flex items-center gap-2
+        rounded-md p-2 text-white font-medium shadow-md
+        flex items-center gap-1.5
         relative
         w-fit
         ${children ? 'rounded-b-none border-b-0' : ''}
         border border-black/20
         
-        /* Top notch - made wider and more rounded */
+        /* Top notch - made smaller */
         before:content-[''] 
-        before:absolute before:left-3 before:-top-3
-        before:w-8 before:h-3 before:bg-inherit 
+        before:absolute before:left-3 before:-top-2
+        before:w-6 before:h-2 before:bg-inherit 
         before:rounded-t-md
         before:border-t before:border-l before:border-r before:border-black/20
         
-        /* Bottom notch - made wider and more rounded */
+        /* Bottom notch - made smaller */
         ${!children ? `
           after:content-['']
-          after:absolute after:left-3 after:-bottom-3
-          after:w-8 after:h-3 after:bg-inherit
+          after:absolute after:left-3 after:-bottom-2
+          after:w-6 after:h-2 after:bg-inherit
           after:rounded-b-md
           after:border-b after:border-l after:border-r after:border-black/20
         ` : ''}
         
-        /* Spacing */
-        mt-3
+        /* Reduced top margin */
+        mt-2
       `}>
-        {getIcon(type)}
+        {/* Make icons smaller */}
+        {React.cloneElement(getIcon(type), { className: "w-4 h-4" })}
         {parseContent(content).map((part, idx) => {
           if (part.type === 'bracket') {
             const bgColor = part.bracketType === 'number' ? 'bg-white' 
               : part.bracketType === 'string' ? 'bg-blue-200'
               : 'bg-green-200';
             return (
-              <span key={idx} className={`${bgColor} rounded px-2 py-1 text-black text-sm`}>
+              <span key={idx} className={`${bgColor} rounded px-1.5 py-0.5 text-black text-xs`}>
                 {part.content}
               </span>
             );
           }
           if (part.type === 'icon') {
-            return <span key={idx} className="">{getShapeIcon(part.content)}</span>;
+            return <span key={idx} className="">{React.cloneElement(getShapeIcon(part.content), { className: "w-4 h-4" })}</span>;
           }
           if (part.type === 'color') {
             return (
               <span 
                 key={idx} 
-                className="inline-block w-4 h-4 rounded-full ml-1" 
+                className="inline-block w-4 h-4 rounded-full" 
                 style={{ backgroundColor: part.content }}
               />
             );
           }
-          return <span key={idx}>{part.content}</span>;
+          return <span key={idx} className="text-sm">{part.content}</span>;
         })}
       </div>
 
       {/* Nested blocks container for C-blocks */}
       {children && (type === 'repeat' || type === 'if') && (
-        <div className="relative -mt-3 border-1">
+        <div className="relative -mt-2 border-1">
           {/* C-block wrapper - adjusted width to match notch width */}
           <div className={`
             absolute left-0 top-0 bottom-0
-            w-14 
+            w-10 
             border-l border-b border-black/20
             rounded-bl-md
             ${blockStyles[type] || 'border-gray-500'}
           `} />
           {/* Nested content container - adjusted margin to match new width */}
-          <div className="ml-14 pb-3">
+          <div className="ml-10 pb-2">
             {children}
           </div>
           {/* Closing notch for nested blocks */}
           <div className={`
-            w-3/4 h-10
+            w-3/4 h-8
             rounded-md
             border border-black/20
             ${blockStyles[type] || 'border-gray-500'}
@@ -248,9 +249,9 @@ const ScratchInstructions = ({ instructions }) => {
   };
 
   return (
-    <div className="p-6 bg-gray-100 rounded-xl">
-      <h2 className="text-xl font-bold mb-4">Drawing Instructions</h2>
-      <div className="space-y-1">
+    <div className="pl-4 pr-4 pt-0 rounded-xl">
+      {/* <h2 className="text-lg font-bold mb-3">Drawing Instructions</h2> */}
+      <div className="space-y-0.5">
         {instructions.map((instr, idx) => (
           <div key={idx}>{renderInstructions(instr)}</div>
         ))}

@@ -16,6 +16,7 @@ export type Database = {
           id: string
           join_code: string | null
           test_started: boolean | null
+          current_round: number
         }
         Insert: {
           created_at?: string | null
@@ -23,6 +24,7 @@ export type Database = {
           id?: string
           join_code?: string | null
           test_started?: boolean | null
+          current_round?: number
         }
         Update: {
           created_at?: string | null
@@ -30,6 +32,7 @@ export type Database = {
           id?: string
           join_code?: string | null
           test_started?: boolean | null
+          current_round?: number
         }
         Relationships: [
           {

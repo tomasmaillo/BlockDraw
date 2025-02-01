@@ -12,7 +12,7 @@ export interface Exercise {
 
 export const exercises: Exercise[] = [
   {
-    id: '1',
+    id: uuidv4(),
     name: 'Basic Shapes',
     instructions: ['Draw a circle', 'Draw a square'],
     validationRules: [
@@ -21,7 +21,7 @@ export const exercises: Exercise[] = [
     ]
   },
   {
-    id: '2',
+    id: uuidv4(),
     name: 'Advanced Shapes',
     instructions: ['Draw a triangle', 'Draw a star'],
     validationRules: [
