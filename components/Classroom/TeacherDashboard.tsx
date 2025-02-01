@@ -91,7 +91,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
 
         </div>
 
-        {/* <div className="w-full max-w-lg">
+        <div className="w-full max-w-lg">
           <div className="grid grid-cols-2 gap-6">
             {exercises.map((exercise) => (
               <button
@@ -102,7 +102,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
               </button>
             ))}
           </div>
-        </div> */}
+        </div>
 
         {selectedExercise && (
           <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8">

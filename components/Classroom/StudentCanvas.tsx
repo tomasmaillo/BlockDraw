@@ -300,8 +300,8 @@ const StudentCanvas = ({
 
   return (
     <>
-      <div className="flex flex-col h-full">
-        <div className="bg-white p-4 rounded-xl shadow-lg">
+      <div className="flex flex-col h-full w-full bg-purple-500">
+        <div className="p-4 rounded-xl shadow-lg">
           <div className="mb-4">
             <div className="flex flex-wrap gap-2 justify-between">
               {COLORS.map((c) => (

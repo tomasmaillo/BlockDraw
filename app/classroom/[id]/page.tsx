@@ -15,9 +15,9 @@ export default function ClassroomPage({ params }: { params: { id: string } }) {
   return (
     <ClassroomProvider classroomId={classroomId}>
       {({ participants, testStarted }) => (
-        <div className="min-h-screen bg-blue-500">
+        <div className="min-h-screen">
 
-          <main className="max-w-7xl mx-auto px-4 py-8">
+          <main className="w-full h-full">
             {role === 'teacher' ? (
               <TeacherDashboard classroomId={classroomId} />
             ) : (
