@@ -9,10 +9,8 @@ const COLORS = [
   { name: 'Blue', value: '#72c1f5' },
   { name: 'Green', value: '#57d057' },
 
-
   { name: 'Orange', value: '#f9a25a' },
-  { name: 'Brown', value: '#ae6c3d' }
-
+  { name: 'Brown', value: '#ae6c3d' },
 ]
 
 const BRUSH_SIZE = 6 // Medium size
@@ -39,15 +37,29 @@ const StudentCanvas = ({
     const resizeCanvas = () => {
       const canvas = canvasRef.current
       if (!canvas) return
-  
+
       const container = canvas.parentElement
       if (!container) return
-  
-      // Set canvas dimensions to match container
-      canvas.width = container.clientWidth
-      canvas.height = container.clientHeight
+
+      // Get the device pixel ratio
+      const dpr = window.devicePixelRatio || 1
+
+      // Set canvas dimensions accounting for device pixel ratio
+      const rect = container.getBoundingClientRect()
+      canvas.width = rect.width * dpr
+      canvas.height = rect.height * dpr
+
+      // Scale the canvas CSS dimensions
+      canvas.style.width = `${rect.width}px`
+      canvas.style.height = `${rect.height}px`
+
+      // Scale the drawing context
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.scale(dpr, dpr)
+      }
     }
-  
+
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
     return () => window.removeEventListener('resize', resizeCanvas)
@@ -193,9 +205,9 @@ const StudentCanvas = ({
 
     // Redraw the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    
+
     let lastPoint: { x: number; y: number } | null = null
-    
+
     previousState.forEach((item) => {
       if (item.type === 'dot') {
         ctx.beginPath()
@@ -209,13 +221,13 @@ const StudentCanvas = ({
         ctx.lineWidth = item.size
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
-        
+
         if (lastPoint) {
           ctx.moveTo(lastPoint.x, lastPoint.y)
           ctx.lineTo(item.x, item.y)
           ctx.stroke()
         }
-        
+
         lastPoint = { x: item.x, y: item.y }
       }
     })
@@ -287,11 +299,11 @@ const StudentCanvas = ({
   // Add a loading state when no exercise is selected
   if (!currentExercise) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-screen font-montserrat">
         <div className="text-center p-8 bg-white rounded-lg shadow">
           <h2 className="text-xl font-bold mb-2">Waiting for teacher...</h2>
           <p className="text-gray-600">
-            Please wait while the teacher selects an exercise.
+            Please wait while the teacher starts the test!
           </p>
         </div>
       </div>
@@ -301,24 +313,22 @@ const StudentCanvas = ({
   return (
     <>
       <div className="flex flex-col h-screen w-full bg-purple-500">
-        <div className="flex-1 p-4 rounded-xl shadow-lg">
-          <div className="mb-4">
-            <div className="flex flex-wrap gap-2 justify-between">
-              {COLORS.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => setColor(c.value)}
-                  className={`w-10 h-10 rounded-full border-4 ${
-                    color === c.value ? 'border-yellow-300' : 'border-gray-200'
-                  }`}
-                  style={{ backgroundColor: c.value }}
-                  aria-label={c.name}
-                />
-              ))}
-            </div>
+        <div className="flex flex-col flex-1 p-4 gap-4">
+          <div className="flex flex-wrap gap-2 justify-between shrink-0">
+            {COLORS.map((c) => (
+              <button
+                key={c.value}
+                onClick={() => setColor(c.value)}
+                className={`w-10 h-10 rounded-full border-4 ${
+                  color === c.value ? 'border-yellow-300' : 'border-gray-200'
+                }`}
+                style={{ backgroundColor: c.value }}
+                aria-label={c.name}
+              />
+            ))}
           </div>
 
-          <div className="relative flex-1 h-[calc(100vh-12rem)]">
+          <div className="relative flex-1 min-h-0">
             <canvas
               ref={canvasRef}
               className="touch-none border-2 border-gray-200 rounded-lg w-full h-full bg-white"
@@ -345,7 +355,7 @@ const StudentCanvas = ({
             </div>
           </div>
 
-          <div className="mt-4 font-montserrat font-bold">
+          <div className="font-montserrat font-bold shrink-0">
             <button
               onClick={saveDrawing}
               className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
@@ -357,7 +367,7 @@ const StudentCanvas = ({
       </div>
       <AnalysisOverlay
         isAnalyzing={isAnalyzing}
-        results={results}
+        results={results || undefined}
         onClose={() => setResults(null)}
       />
     </>

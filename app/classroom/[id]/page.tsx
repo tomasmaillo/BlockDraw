@@ -12,17 +12,12 @@ export default function ClassroomPage({ params }: { params: { id: string } }) {
   const classroomId = use(params).id
 
   return (
-    <div className="min-h-screen">
-      <main className="w-full h-full">
-        {role === 'teacher' ? (
-          <TeacherDashboard classroomId={classroomId} />
-        ) : (
-          <StudentCanvas
-            classroomId={classroomId}
-            studentId={studentId || ''}
-          />
-        )}
-      </main>
+    <div className="min-h-screen w-full">
+      {role === 'teacher' ? (
+        <TeacherDashboard classroomId={classroomId} />
+      ) : (
+        <StudentCanvas classroomId={classroomId} studentId={studentId || ''} />
+      )}
     </div>
   )
 }
