@@ -39,15 +39,15 @@ const StudentCanvas = ({
     const resizeCanvas = () => {
       const canvas = canvasRef.current
       if (!canvas) return
-
-      const windowHeight = window.innerHeight
-      const topOffset = canvas.getBoundingClientRect().top
-      const bottomPadding = 100
-
-      canvas.width = canvas.offsetWidth
-      canvas.height = Math.max(windowHeight - topOffset - bottomPadding, 300)
+  
+      const container = canvas.parentElement
+      if (!container) return
+  
+      // Set canvas dimensions to match container
+      canvas.width = container.clientWidth
+      canvas.height = container.clientHeight
     }
-
+  
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
     return () => window.removeEventListener('resize', resizeCanvas)
@@ -300,8 +300,8 @@ const StudentCanvas = ({
 
   return (
     <>
-      <div className="flex flex-col h-full w-full bg-purple-500">
-        <div className="p-4 rounded-xl shadow-lg">
+      <div className="flex flex-col h-screen w-full bg-purple-500">
+        <div className="flex-1 p-4 rounded-xl shadow-lg">
           <div className="mb-4">
             <div className="flex flex-wrap gap-2 justify-between">
               {COLORS.map((c) => (
@@ -318,10 +318,10 @@ const StudentCanvas = ({
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative flex-1 h-[calc(100vh-12rem)]">
             <canvas
               ref={canvasRef}
-              className="touch-none border-2 border-gray-200 rounded-lg w-full bg-white"
+              className="touch-none border-2 border-gray-200 rounded-lg w-full h-full bg-white"
               onMouseDown={startDrawing}
               onMouseUp={endDrawing}
               onMouseOut={endDrawing}
