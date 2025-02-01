@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import supabase from '@/lib/supabase'
-
+import Image from 'next/image'
 export default function JoinClassroom() {
   const [joinCode, setJoinCode] = useState('')
   const router = useRouter()
@@ -65,7 +65,8 @@ export default function JoinClassroom() {
 
   return (
     <div className="max-w-md mx-auto bg-white p-6 rounded shadow">
-      <h2 className="text-2xl font-bold mb-4">Welcome!</h2>
+      <Image src="/logo.svg" alt="BlockDraw" width={300} height={300} className="mb-4" />
+
       <button
         onClick={createClassroom}
         className="w-full bg-green-500 text-white py-2 rounded mb-4">
