@@ -31,8 +31,9 @@ const QRCodeDisplay = ({ classroomId }: QRCodeDisplayProps) => {
     <div className="flex flex-col items-center bg-white p-4 rounded-lg">
       <QRCodeSVG value={joinUrl} size={200} />
       <p className="mt-4 text-sm text-gray-600">Scan to join the class</p>
-      <p className="mt-2 font-mono text-sm p-2 rounded text-blue-700">
-        Class code: {joinCode}
+      <p className="mt-4 font-montserrat text-xl p-2 rounded text-black font-bold text-center">
+        Class code: <br />
+        <span className="text-2xl">{classroomId}</span>
       </p>
     </div>
   )

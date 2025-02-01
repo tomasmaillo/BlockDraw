@@ -128,8 +128,39 @@ const Block = ({ content, type, nested, children }: { content: string, type: str
   };
 
   return (
-    <div className="my-1">
-      <div className={`${blockStyles[type] || 'bg-gray-500'} rounded-lg p-3 text-white font-medium shadow flex items-center gap-2 flex-wrap`}>
+    <div className={`
+      relative 
+      -mb-3
+    `}>
+      {/* Main block */}
+      <div className={`
+        ${blockStyles[type] || 'bg-gray-500'} 
+        rounded-md p-3 text-white font-medium shadow-md
+        flex items-center gap-2
+        relative
+        w-fit
+        ${children ? 'rounded-b-none border-b-0' : ''}
+        border border-black/20
+        
+        /* Top notch - made wider and more rounded */
+        before:content-[''] 
+        before:absolute before:left-3 before:-top-3
+        before:w-8 before:h-3 before:bg-inherit 
+        before:rounded-t-md
+        before:border-t before:border-l before:border-r before:border-black/20
+        
+        /* Bottom notch - made wider and more rounded */
+        ${!children ? `
+          after:content-['']
+          after:absolute after:left-3 after:-bottom-3
+          after:w-8 after:h-3 after:bg-inherit
+          after:rounded-b-md
+          after:border-b after:border-l after:border-r after:border-black/20
+        ` : ''}
+        
+        /* Spacing */
+        mt-3
+      `}>
         {getIcon(type)}
         {parseContent(content).map((part, idx) => {
           if (part.type === 'bracket') {
@@ -157,14 +188,35 @@ const Block = ({ content, type, nested, children }: { content: string, type: str
           return <span key={idx}>{part.content}</span>;
         })}
       </div>
-      {children && (
-        <div className="ml-8 pl-4 border-l-2 border-gray-300">
-          {children}
+
+      {/* Nested blocks container for C-blocks */}
+      {children && (type === 'repeat' || type === 'if') && (
+        <div className="relative -mt-3 border-1">
+          {/* C-block wrapper - adjusted width to match notch width */}
+          <div className={`
+            absolute left-0 top-0 bottom-0
+            w-14 
+            border-l border-b border-black/20
+            rounded-bl-md
+            ${blockStyles[type] || 'border-gray-500'}
+          `} />
+          {/* Nested content container - adjusted margin to match new width */}
+          <div className="ml-14 pb-3">
+            {children}
+          </div>
+          {/* Closing notch for nested blocks */}
+          <div className={`
+            w-3/4 h-10
+            rounded-md
+            border border-black/20
+            ${blockStyles[type] || 'border-gray-500'}
+          `}/>
         </div>
       )}
     </div>
   );
 };
+
 
 const ScratchInstructions = ({ instructions }) => {
   const renderInstructions = (instr) => {
