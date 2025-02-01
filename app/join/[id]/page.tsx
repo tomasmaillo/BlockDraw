@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import supabase from '@/lib/supabase'
+import { ArrowRight } from 'lucide-react'
 
 export default function JoinPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -36,35 +37,30 @@ export default function JoinPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-8">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
+    <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gradient-to-br from-blue-400 via-purple-500 to-blue-500 animate-gradient">
+      <div className="w-full max-w-md bg-white p-8 rounded-[2rem] shadow-lg">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          Join Classroom
+          Join!
         </h1>
-        <p className="text-gray-600 text-center mb-8">
-          Please enter your name to join the classroom session
-        </p>
+        {/* <p className="text-black text-center mb-8 font-bold font-montserrat">
+         Enter your name below
+        </p> */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-gray-600 mb-2">
-              Your Name
-            </label>
             <input
               id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
-              className="text-gray-600 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full border-2 border-gray-200 rounded-full px-6 py-3 text-lg focus:outline-none focus:border-blue-400 transition-colors"
               required
             />
           </div>
           <button
             type="submit"
-            className="w-full px-4 py-3 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium">
-            Join Classroom
+            className="font-bold rounded-[2rem] w-full px-4 py-3 text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium">
+            Join <ArrowRight className="inline" size={24} />
           </button>
         </form>
       </div>

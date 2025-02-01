@@ -315,11 +315,16 @@ const StudentCanvas = ({
   // Add a loading state when no exercise is selected
   if (!currentExercise) {
     return (
-      <div className="flex items-center justify-center h-screen font-montserrat">
-        <div className="text-center p-8 bg-white rounded-lg shadow">
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gradient-to-br from-blue-400 via-purple-500 to-blue-500">
+        <div className="text-center p-8 bg-white rounded-[2rem] shadow-lg">
+          <div className="flex justify-center mb-6">
+            <div className="animate-bounce transform rotate-45 text-4xl">
+              ✏️
+            </div>
+          </div>
           <h2 className="text-xl font-bold mb-2">Waiting for teacher...</h2>
           <p className="text-gray-600">
-            Please wait while the teacher starts the test!
+            Please wait while the teacher starts the challenge!
           </p>
         </div>
       </div>
