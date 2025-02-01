@@ -12,6 +12,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   const [participants, setParticipants] = useState<any[]>([])
   const [scores, setScores] = useState<any[]>([])
   const [currentSubmissions, setCurrentSubmissions] = useState<string[]>([])
+  const [allSubmitted, setAllSubmitted] = useState(false)
 
   const startGame = async () => {
     console.log('Starting game...') // Debug log
@@ -180,11 +181,16 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
         .select('participant_id')
         .eq('exercise_id', exercises[currentRound].id)
 
+      console.log('Submitted scores:', submittedScores?.length, 'Participants:', participants.length)
+      
       if (submittedScores?.length === participants.length) {
-        // All participants have submitted
-        setTimeout(advanceToNextRound, 3000) // Wait 3 seconds before next round
+        console.log('All participants have submitted!')
+        setAllSubmitted(true)
       }
     }
+
+    // Run checkAllSubmitted immediately when the effect runs
+    checkAllSubmitted()
 
     const subscription = supabase
       .channel('scores_channel')
@@ -194,8 +200,12 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
           event: 'INSERT',
           schema: 'public',
           table: 'scores',
+          filter: `exercise_id=eq.${exercises[currentRound].id}`
         },
-        checkAllSubmitted
+        (payload) => {
+          console.log('New score submitted:', payload)
+          checkAllSubmitted()
+        }
       )
       .subscribe()
 
@@ -256,10 +266,13 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
           event: 'INSERT',
           schema: 'public',
           table: 'scores',
+          filter: `exercise_id=eq.${exercises[currentRound].id}`
         },
         (payload) => {
           setCurrentSubmissions(prev => [...prev, payload.new.participant_id])
-          checkAllSubmitted()
+          if ([...currentSubmissions, payload.new.participant_id].length === participants.length) {
+            setTimeout(advanceToNextRound, 3000)
+          }
         }
       )
       .subscribe()
@@ -267,7 +280,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
     return () => {
       supabase.removeChannel(subscription)
     }
-  }, [currentRound, gameStarted])
+  }, [currentRound, gameStarted, participants.length])
 
   return (
     <div className="min-h-screen bg-blue-500 p-8 font-montserrat">
@@ -361,6 +374,22 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
                 </AnimatePresence>
               </motion.div>
             </div>
+            {/* Debug info */}
+            <div className="text-white mt-4">
+              All Submitted: {allSubmitted ? 'Yes' : 'No'}, 
+              Submissions: {currentSubmissions.length}, 
+              Participants: {participants.length}
+            </div>
+            {allSubmitted && (
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={advanceToNextRound}
+                className="mt-8 px-8 py-4 text-xl font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors mx-auto block"
+              >
+                Next Round
+              </motion.button>
+            )}
           </>
         )}
 

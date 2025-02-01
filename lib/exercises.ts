@@ -12,7 +12,7 @@ export interface Exercise {
 
 export const exercises: Exercise[] = [
   {
-    id: uuidv4(),
+    id: '123e4567-e89b-12d3-a456-426614174000',
     name: 'Basic Shapes',
     instructions: ['Draw a circle', 'Draw a square'],
     validationRules: [
@@ -21,7 +21,7 @@ export const exercises: Exercise[] = [
     ]
   },
   {
-    id: uuidv4(),
+    id: '223e4567-e89b-12d3-a456-426614174000',
     name: 'Advanced Shapes',
     instructions: ['Draw a triangle', 'Draw a star'],
     validationRules: [
@@ -30,7 +30,7 @@ export const exercises: Exercise[] = [
     ]
   },
   {
-    id: '123e4567-e89b-12d3-a456-426614174000',
+    id: '323e4567-e89b-12d3-a456-426614174000',
     name: 'Draw a Snowman ⛄',
     instructions: [
       'Start at the top of the screen',
@@ -76,7 +76,7 @@ export const exercises: Exercise[] = [
     ]
   },
   {
-    id: '987fcdeb-51a2-43d7-9012-345678901234',
+    id: '423e4567-e89b-12d3-a456-426614174000',
     name: 'Draw a House 🏠',
     instructions: [
       'Draw a square for the base',

@@ -60,8 +60,12 @@ export async function POST(req: Request) {
       (ex) => ex.id === classroom.current_exercise_id
     )
     if (!exercise) {
+      console.log('Current exercise ID:', classroom.current_exercise_id);
+      console.log('Available exercise IDs:', exercises.map(ex => ex.id));
       return NextResponse.json({ error: 'Exercise not found' }, { status: 404 })
     }
+
+    console.log('Found exercise:', exercise);
 
     // Convert blob to base64 for OpenAI API
     const imageBase64 = Buffer.from(await image.arrayBuffer()).toString(
