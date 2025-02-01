@@ -4,6 +4,7 @@ import QRCodeDisplay from '../QRCode'
 import CodeViewer from '../code-viewer'
 import { exercises } from '@/lib/exercises'
 import ParticipantsList from './ParticipantsList'
+import { motion } from 'framer-motion'
 
 const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   const [currentRound, setCurrentRound] = useState(0)
@@ -180,8 +181,13 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
         .select('participant_id')
         .eq('exercise_id', exercises[currentRound].id)
 
-      console.log('Submitted scores:', submittedScores?.length, 'Participants:', participants.length)
-      
+      console.log(
+        'Submitted scores:',
+        submittedScores?.length,
+        'Participants:',
+        participants.length
+      )
+
       if (submittedScores?.length === participants.length) {
         console.log('All participants have submitted!')
         setAllSubmitted(true)
@@ -199,7 +205,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
           event: 'INSERT',
           schema: 'public',
           table: 'scores',
-          filter: `exercise_id=eq.${exercises[currentRound].id}`
+          filter: `exercise_id=eq.${exercises[currentRound].id}`,
         },
         (payload) => {
           console.log('New score submitted:', payload)
@@ -265,11 +271,14 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
           event: 'INSERT',
           schema: 'public',
           table: 'scores',
-          filter: `exercise_id=eq.${exercises[currentRound].id}`
+          filter: `exercise_id=eq.${exercises[currentRound].id}`,
         },
         (payload) => {
-          setCurrentSubmissions(prev => [...prev, payload.new.participant_id])
-          if ([...currentSubmissions, payload.new.participant_id].length === participants.length) {
+          setCurrentSubmissions((prev) => [...prev, payload.new.participant_id])
+          if (
+            [...currentSubmissions, payload.new.participant_id].length ===
+            participants.length
+          ) {
             setTimeout(advanceToNextRound, 3000)
           }
         }
@@ -321,58 +330,13 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
                 />
               </div>
             </div>
-            {/* Debug info */}
-            <div className="text-white mt-4">
-              All Submitted: {allSubmitted ? 'Yes' : 'No'}, 
-              Submissions: {currentSubmissions.length}, 
-              Participants: {participants.length}
-            </div>
-            {allSubmitted && (
-              <motion.button
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-80 bg-white border-blue border-2 rounded-2xl p-8 h-fit">
-                <div className="flex items-center gap-2 mb-4">
-                  <Users className="w-6 h-6 text-blue-500" />
-                  <h3 className="text-xl font-semibold text-gray-800">
-                    Connected Students
-                  </h3>
-                </div>
-                <AnimatePresence>
-                  {participants.map((participant, index) => (
-                    <motion.div
-                      key={participant.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50">
-                      <div 
-                        className={`w-2 h-2 rounded-full ${
-                          currentSubmissions.includes(participant.id)
-                            ? 'bg-green-500'
-                            : 'bg-orange-500'
-                        }`} 
-                      />
-                      <span className="text-gray-700">{participant.name} {currentSubmissions.includes(participant.id) ? 'submitted!✅' : 'hasn\'t submitted yet!'}</span>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </motion.div>
-            </div>
-            {/* Debug info */}
-            <div className="text-white mt-4">
-              All Submitted: {allSubmitted ? 'Yes' : 'No'}, 
-              Submissions: {currentSubmissions.length}, 
-              Participants: {participants.length}
-            </div>
+
             {allSubmitted && (
               <motion.button
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 onClick={advanceToNextRound}
-                className="mt-8 px-8 py-4 text-xl font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors mx-auto block"
-              >
+                className="mt-8 px-8 py-4 text-xl font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors mx-auto block">
                 Next Round
               </motion.button>
             )}
