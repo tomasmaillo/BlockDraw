@@ -1,9 +1,12 @@
-import CodeViewer from '@/components/code-viewer'
+'use client'
+
+import JoinClassroom from '@/components/JoinClassroom'
+import Layout from '@/components/Layout'
 
 export default function Home() {
   return (
-    <div className="">
-      <CodeViewer />
-    </div>
+    <Layout>
+      <JoinClassroom />
+    </Layout>
   )
 }
