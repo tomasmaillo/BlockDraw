@@ -3,12 +3,15 @@ import supabase from '@/lib/supabase'
 import QRCodeDisplay from '../QRCode'
 import CodeViewer from '../code-viewer'
 import { exercises, Exercise } from '@/lib/exercises'
+import { Users } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(
     null
   )
   const [scores, setScores] = useState<any[]>([])
+  const [participants, setParticipants] = useState<any[]>([])
 
   const startExercise = async (exercise: Exercise) => {
     try {
@@ -78,6 +81,61 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
     syncExercises()
   }, [])
 
+  useEffect(() => {
+    // First, fetch existing participants
+    const fetchParticipants = async () => {
+      const { data, error } = await supabase
+        .from('participants')
+        .select('*')
+        .eq('classroom_id', classroomId)
+
+      if (error) {
+        console.error('Error fetching participants:', error)
+        return
+      }
+
+      if (data) {
+        console.log('Initial participants:', data)
+        setParticipants(data)
+      }
+    }
+
+    fetchParticipants()
+
+    // Simple realtime subscription using channel
+    const channel = supabase
+      .channel('participants_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'participants',
+          filter: `classroom_id=eq.${classroomId}`,
+        },
+        (payload) => {
+          console.log('Realtime event:', payload)
+          if (payload.eventType === 'INSERT') {
+            setParticipants((prev) => [...prev, payload.new])
+          } else if (payload.eventType === 'DELETE') {
+            setParticipants((prev) =>
+              prev.filter((p) => p.id !== payload.old.id)
+            )
+          } else if (payload.eventType === 'UPDATE') {
+            setParticipants((prev) =>
+              prev.map((p) => (p.id === payload.new.id ? payload.new : p))
+            )
+          }
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscription
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [classroomId])
+
   return (
     <div className="min-h-screen bg-blue-500 p-8 font-montserrat">
       <h2 className="text-4xl font-bold text-white mb-16 text-center">
@@ -85,10 +143,42 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
       </h2>
 
       <div className="flex flex-col items-center space-y-20 max-w-6xl mx-auto">
-        <div className="w-full max-w-xl bg-white border-blue border-2 rounded-2xl p-8 ">
-   
-            <QRCodeDisplay classroomId={classroomId} />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-xl bg-white border-blue border-2 rounded-2xl p-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="w-6 h-6 text-blue-500" />
+            <h3 className="text-xl font-semibold text-gray-800">
+              Connected Students
+            </h3>
+          </div>
+          <AnimatePresence>
+            {participants.map((participant, index) => (
+              <motion.div
+                key={participant.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50">
+                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <span className="text-gray-700">{participant.name}</span>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {participants.length === 0 && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-gray-500 text-center py-4">
+              Waiting for students to join...
+            </motion.p>
+          )}
+        </motion.div>
 
+        <div className="w-full max-w-xl bg-white border-blue border-2 rounded-2xl p-8">
+          <QRCodeDisplay classroomId={classroomId} />
         </div>
 
         <div className="w-full max-w-lg">
@@ -120,10 +210,9 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
             </h3>
             <div className="space-y-4">
               {scores.map((score) => (
-                <div 
-                  key={score.id} 
-                  className="px-6 py-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
+                <div
+                  key={score.id}
+                  className="px-6 py-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                   <p className="text-gray-700 font-medium">
                     {score.participant_name}{' '}
                     <span className="text-blue-500 ml-2">

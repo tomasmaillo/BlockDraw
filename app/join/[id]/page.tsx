@@ -12,7 +12,7 @@ export default function JoinPage({ params }: { params: { id: string } }) {
     e.preventDefault()
     if (!name.trim()) return
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('participants')
       .insert([
         {
@@ -24,7 +24,13 @@ export default function JoinPage({ params }: { params: { id: string } }) {
       .select()
       .single()
 
+    if (error) {
+      console.error('Error inserting participant:', error)
+      return
+    }
+
     if (data) {
+      console.log('Successfully inserted participant:', data)
       router.push(`/classroom/${params.id}?role=student&studentId=${data.id}`)
     }
   }
@@ -40,10 +46,9 @@ export default function JoinPage({ params }: { params: { id: string } }) {
         </p>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label 
-              htmlFor="name" 
-              className="block text-sm font-medium text-gray-600 mb-2"
-            >
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-600 mb-2">
               Your Name
             </label>
             <input
@@ -58,8 +63,7 @@ export default function JoinPage({ params }: { params: { id: string } }) {
           </div>
           <button
             type="submit"
-            className="w-full px-4 py-3 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
-          >
+            className="w-full px-4 py-3 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium">
             Join Classroom
           </button>
         </form>

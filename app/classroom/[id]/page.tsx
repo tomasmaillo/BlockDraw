@@ -1,7 +1,6 @@
 'use client'
 
 import { use } from 'react'
-import { ClassroomProvider } from '@/components/ClassroomProvider'
 import TeacherDashboard from '@/components/Classroom/TeacherDashboard'
 import StudentCanvas from '@/components/Classroom/StudentCanvas'
 import { useSearchParams } from 'next/navigation'
@@ -13,23 +12,17 @@ export default function ClassroomPage({ params }: { params: { id: string } }) {
   const classroomId = use(params).id
 
   return (
-    <ClassroomProvider classroomId={classroomId}>
-      {({ participants, testStarted }) => (
-        <div className="min-h-screen">
-
-          <main className="w-full h-full">
-            {role === 'teacher' ? (
-              <TeacherDashboard classroomId={classroomId} />
-            ) : (
-              <StudentCanvas
-                classroomId={classroomId}
-                studentId={studentId || ''}
-              />
-              
-            )}
-          </main>
-        </div>
-      )}
-    </ClassroomProvider>
+    <div className="min-h-screen">
+      <main className="w-full h-full">
+        {role === 'teacher' ? (
+          <TeacherDashboard classroomId={classroomId} />
+        ) : (
+          <StudentCanvas
+            classroomId={classroomId}
+            studentId={studentId || ''}
+          />
+        )}
+      </main>
+    </div>
   )
 }

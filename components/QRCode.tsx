@@ -8,8 +8,7 @@ interface QRCodeDisplayProps {
 
 const QRCodeDisplay = ({ classroomId }: QRCodeDisplayProps) => {
   const [joinCode, setJoinCode] = useState<string>('')
-  const domain = typeof window !== 'undefined' ? window.location.origin : ''
-  const joinUrl = `${domain}/join/${classroomId}`
+  const [joinUrl, setJoinUrl] = useState<string>('')
 
   useEffect(() => {
     const fetchJoinCode = async () => {
@@ -21,6 +20,8 @@ const QRCodeDisplay = ({ classroomId }: QRCodeDisplayProps) => {
 
       if (data?.join_code) {
         setJoinCode(data.join_code)
+        const domain = typeof window !== 'undefined' ? window.location.origin : ''
+        setJoinUrl(`${domain}/join/${classroomId}`)
       }
     }
 
