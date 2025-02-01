@@ -14,18 +14,21 @@ export type Database = {
           created_at: string | null
           current_exercise_id: string | null
           id: string
+          join_code: string | null
           test_started: boolean | null
         }
         Insert: {
           created_at?: string | null
           current_exercise_id?: string | null
           id?: string
+          join_code?: string | null
           test_started?: boolean | null
         }
         Update: {
           created_at?: string | null
           current_exercise_id?: string | null
           id?: string
+          join_code?: string | null
           test_started?: boolean | null
         }
         Relationships: [

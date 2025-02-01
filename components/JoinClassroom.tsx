@@ -5,16 +5,27 @@ import { useRouter } from 'next/navigation'
 import supabase from '@/lib/supabase'
 
 export default function JoinClassroom() {
-  
-  const [joinId, setJoinId] = useState('')
+  const [joinCode, setJoinCode] = useState('')
   const router = useRouter()
+
+  const generateSimpleId = () => {
+    // Generate a 6-character alphanumeric ID (uppercase letters and numbers)
+    const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // Removed similar-looking characters (0,1,I,O)
+    let result = ''
+    for (let i = 0; i < 6; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length))
+    }
+    return result
+  }
 
   const createClassroom = async () => {
     try {
+      const simpleCode = generateSimpleId()
       const { data, error } = await supabase
         .from('classrooms')
         .insert([
           {
+            join_code: simpleCode,
             test_started: false,
             current_exercise_id: null,
           },
@@ -35,9 +46,21 @@ export default function JoinClassroom() {
     }
   }
 
-  const joinClassroom = () => {
-    if (!joinId.trim()) return
-    router.push(`/join/${joinId}`)
+  const joinClassroom = async () => {
+    if (!joinCode.trim()) return
+
+    const { data, error } = await supabase
+      .from('classrooms')
+      .select('id')
+      .eq('join_code', joinCode.trim().toUpperCase())
+      .single()
+
+    if (error || !data) {
+      console.error('Classroom not found')
+      return
+    }
+
+    router.push(`/join/${data.id}`)
   }
 
   return (
@@ -51,9 +74,9 @@ export default function JoinClassroom() {
       <div>
         <input
           type="text"
-          placeholder="Enter Classroom ID"
-          value={joinId}
-          onChange={(e) => setJoinId(e.target.value)}
+          placeholder="Enter Class Code"
+          value={joinCode}
+          onChange={(e) => setJoinCode(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-2 mb-2"
         />
         <button
