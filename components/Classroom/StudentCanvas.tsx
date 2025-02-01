@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import supabase from '@/lib/supabase'
+import AnalysisOverlay from './AnalysisOverlay'
 
 const COLORS = [
   { name: 'Red', value: '#FF6B6B' },
@@ -24,6 +25,9 @@ const StudentCanvas = ({
   const [isDrawing, setIsDrawing] = useState(false)
   const [drawingData, setDrawingData] = useState<any[]>([])
   const [drawingHistory, setDrawingHistory] = useState<any[][]>([])
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [results, setResults] = useState(null)
+  const [startTime] = useState(Date.now())
 
   // Set canvas size on mount and window resize
   useEffect(() => {
@@ -167,66 +171,107 @@ const StudentCanvas = ({
   }
 
   const saveDrawing = useCallback(async () => {
-    await supabase
-      .from('participants')
-      .update({
-        finished: true,
-        drawing_data: drawingData,
+    setIsAnalyzing(true)
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const imageData = canvas.toDataURL('image/png')
+
+    try {
+      // Send to your API endpoint that will handle OpenAI analysis
+      const response = await fetch('/api/analyze-drawing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: imageData,
+          studentId,
+          classroomId,
+        }),
       })
-      .eq('id', studentId)
-  }, [drawingData, studentId])
+
+      const data = await response.json()
+
+      const timeTaken = Math.floor((Date.now() - startTime) / 1000)
+
+      // Save score to database
+      await supabase.from('scores').insert({
+        participant_id: studentId,
+        exercise_id: data.exerciseId,
+        score: data.score,
+        time_taken: timeTaken,
+      })
+
+      setResults({
+        score: data.score,
+        total: data.total,
+        timeTaken,
+      })
+    } catch (error) {
+      console.error('Analysis failed:', error)
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }, [drawingData, studentId, classroomId, startTime])
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="bg-white p-4 rounded-xl shadow-lg">
-        <div className="mb-4">
-          <div className="flex flex-wrap gap-2 justify-between">
-            {COLORS.map((c) => (
-              <button
-                key={c.value}
-                onClick={() => setColor(c.value)}
-                className={`w-10 h-10 rounded-full border-2 ${
-                  color === c.value ? 'border-black' : 'border-gray-200'
-                }`}
-                style={{ backgroundColor: c.value }}
-                aria-label={c.name}
-              />
-            ))}
+    <>
+      <div className="flex flex-col h-full">
+        <div className="bg-white p-4 rounded-xl shadow-lg">
+          <div className="mb-4">
+            <div className="flex flex-wrap gap-2 justify-between">
+              {COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => setColor(c.value)}
+                  className={`w-10 h-10 rounded-full border-2 ${
+                    color === c.value ? 'border-black' : 'border-gray-200'
+                  }`}
+                  style={{ backgroundColor: c.value }}
+                  aria-label={c.name}
+                />
+              ))}
+            </div>
+          </div>
+
+          <canvas
+            ref={canvasRef}
+            className="touch-none border-2 border-gray-200 rounded-lg w-full bg-white"
+            onMouseDown={startDrawing}
+            onMouseUp={endDrawing}
+            onMouseOut={endDrawing}
+            onMouseMove={draw}
+            onTouchStart={startDrawing}
+            onTouchEnd={endDrawing}
+            onTouchMove={draw}
+          />
+
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={undo}
+              className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors"
+              disabled={drawingHistory.length === 0}>
+              Undo
+            </button>
+            <button
+              onClick={clearCanvas}
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition-colors">
+              Clear
+            </button>
+            <button
+              onClick={saveDrawing}
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-colors">
+              Done
+            </button>
           </div>
         </div>
-
-        <canvas
-          ref={canvasRef}
-          className="touch-none border-2 border-gray-200 rounded-lg w-full bg-white"
-          onMouseDown={startDrawing}
-          onMouseUp={endDrawing}
-          onMouseOut={endDrawing}
-          onMouseMove={draw}
-          onTouchStart={startDrawing}
-          onTouchEnd={endDrawing}
-          onTouchMove={draw}
-        />
-
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={undo}
-            className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-colors"
-            disabled={drawingHistory.length === 0}>
-            Undo
-          </button>
-          <button
-            onClick={clearCanvas}
-            className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition-colors">
-            Clear
-          </button>
-          <button
-            onClick={saveDrawing}
-            className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-colors">
-            Done
-          </button>
-        </div>
       </div>
-    </div>
+      <AnalysisOverlay
+        isAnalyzing={isAnalyzing}
+        results={results}
+        onClose={() => setResults(null)}
+      />
+    </>
   )
 }
 
