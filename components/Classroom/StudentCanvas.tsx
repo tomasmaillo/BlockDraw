@@ -42,8 +42,6 @@ const StudentCanvas = ({
   const [currentExercise, setCurrentExercise] = useState<string | null>(null)
   const [waitingForNextRound, setWaitingForNextRound] = useState(false)
 
-  
-
   // Set canvas size on mount and window resize
   useEffect(() => {
     const resizeCanvas = () => {
@@ -131,12 +129,14 @@ const StudentCanvas = ({
             }
           }
           // Handle round changes
-          else if (payload.new.current_exercise_id !== payload.old?.current_exercise_id) {
+          else if (
+            payload.new.current_exercise_id !== payload.old?.current_exercise_id
+          ) {
             console.log('Round change detected') // Debug log
             setCurrentExercise(payload.new.current_exercise_id)
             setWaitingForNextRound(false)
             setResults(null)
-            
+
             // Clear the canvas for the new round
             const canvas = canvasRef.current
             const ctx = canvas?.getContext('2d')
@@ -397,7 +397,6 @@ const StudentCanvas = ({
       console.error('Analysis failed:', error)
     } finally {
       setIsAnalyzing(false)
-   
     }
   }, [classroomId, studentId, startTime])
 
@@ -480,12 +479,9 @@ const StudentCanvas = ({
         </div>
       )}
 
-      <AnalysisOverlay
-        isAnalyzing={isAnalyzing}
-        results={results || undefined}
-        onClose={() => setResults(null)}
-        setWaitingForNextRound={setWaitingForNextRound}
-      />
+      {results && (
+        <AnalysisOverlay isAnalyzing={isAnalyzing} results={results} />
+      )}
     </>
   )
 }

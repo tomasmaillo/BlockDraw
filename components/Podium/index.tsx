@@ -117,7 +117,7 @@ const Podium = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className="mt-4 text-2xl text-yellow-300 font-bold">
-            🏆 Congratulations {rankedScores[0][0].participant_name}! 🏆
+            🏆 Winner is {rankedScores[0][0].participant_name}! 🏆
           </motion.div>
         )}
       </motion.div>

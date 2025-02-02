@@ -1,14 +1,10 @@
 import { useState, useEffect } from 'react'
-import WaitingForNextRound from './WaitingForNextRound'
 
 const AnalysisOverlay = ({
   isAnalyzing,
   results,
-  onClose,
-  setWaitingForNextRound,
 }: {
-  isAnalyzing: boolean,
-  setWaitingForNextRound: (waiting: boolean) => void
+  isAnalyzing: boolean
   results?: {
     score: number
     total: number
@@ -18,19 +14,14 @@ const AnalysisOverlay = ({
       passed: boolean
     }>
   }
-  onClose: () => void
 }) => {
   const [showConfetti, setShowConfetti] = useState(false)
-  
+
   useEffect(() => {
     if (results && results.score === results.total) {
       setShowConfetti(true)
     }
   }, [results])
-
-  // if (waitingForNextRound) {
-  //   return <WaitingForNextRound />
-  // }
 
   if (!isAnalyzing && !results) return null
 
@@ -61,9 +52,7 @@ const AnalysisOverlay = ({
               <div className="space-y-3 mb-6 text-left">
                 {results.validationResults.map((result, index) => (
                   <div key={index} className="flex items-start gap-2">
-                    <span className="mt-1">
-                      {result.passed ? '✅' : '❌'}
-                    </span>
+                    <span className="mt-1">{result.passed ? '✅' : '❌'}</span>
                     <p className="text-sm text-gray-600">{result.rule}</p>
                   </div>
                 ))}
@@ -71,14 +60,9 @@ const AnalysisOverlay = ({
               <p className="text-gray-500 mb-6">
                 Time taken: {results.timeTaken} seconds
               </p>
-              <button
-                onClick={() => {
-                  setWaitingForNextRound(true)
-                  onClose()
-                }}
-                className="bg-blue-500 text-white px-6 py-2 rounded-full">
-                Continue
-              </button>
+              <p className="text-sm text-gray-400">
+                Waiting for teacher to start next round...
+              </p>
             </>
           )
         )}
