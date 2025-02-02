@@ -128,7 +128,7 @@ export const exercises: Exercise[] = [
               content: 'If this is the 1st circle added:',
               children: [
                 'Change pen color to brown',
-                'Draw a rectangle [icon:rectangle] attached below the circle',
+                'Draw a rectangle [icon:square] attached below the circle',
                 'Change pen color to black',
               ]
             },
