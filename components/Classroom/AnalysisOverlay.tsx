@@ -1,3 +1,4 @@
+import { div } from 'framer-motion/client'
 import { useState, useEffect } from 'react'
 
 const AnalysisOverlay = ({
@@ -48,22 +49,15 @@ const AnalysisOverlay = ({
         ) : (
           results && (
             <>
-              {showConfetti && (
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div className="text-6xl animate-bounce">🎉</div>
-                </div>
-              )}
               <h3 className="text-2xl font-bold mb-4">
                 {results.score === results.total
-                  ? 'Perfect Score! 🎉'
+                  ? 'Perfect Score!'
                   : 'Great job!'}
               </h3>
               <div className="space-y-3 mb-6 text-left">
                 {results.validationResults.map((result, index) => (
                   <div key={index} className="flex gap-2 items-center">
-                    <span className="mt-1">
-                      {result.passed ? '✅' : '❌'}
-                    </span>
+                    <span className="mt-1">{result.passed ? '✅' : '❌'}</span>
                     <p className="text-sm text-gray-600">{result.rule}</p>
                   </div>
                 ))}
