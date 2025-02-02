@@ -366,7 +366,7 @@ const StudentCanvas = ({
   // Add a loading state when no exercise is selected
   if (!currentExercise) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gradient-to-br from-blue-400 via-purple-500 to-blue-500">
+      <div className="flex flex-col items-center justify-center min-h-[calc(100dvh)] p-8 bg-gradient-to-br from-blue-400 via-purple-500 to-blue-500">
         <div className="text-center p-8 bg-white rounded-[2rem] shadow-lg">
           <div className="flex justify-center mb-6">
             <div className="animate-bounce transform rotate-45 text-4xl">

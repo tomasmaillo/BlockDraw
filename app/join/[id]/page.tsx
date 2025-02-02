@@ -37,7 +37,7 @@ export default function JoinPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gradient-to-br from-blue-400 via-purple-500 to-blue-500 animate-gradient">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100dvh)] p-8 bg-gradient-to-br from-blue-400 via-purple-500 to-blue-500 animate-gradient">
       <div className="w-full max-w-md bg-white p-8 rounded-[2rem] shadow-lg">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
           Join!

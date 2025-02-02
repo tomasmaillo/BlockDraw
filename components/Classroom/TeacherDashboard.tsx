@@ -268,7 +268,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   }, [classroomId])
 
   return (
-    <div className="min-h-screen bg-blue-500 p-8 font-montserrat">
+    <div className="min-h-[calc(100dvh)] bg-blue-500 p-8 font-montserrat">
       <h2 className="text-4xl font-bold text-white mb-8 text-center">
         {gameStarted
           ? `Round ${currentRound + 1} of ${exercises.length}`

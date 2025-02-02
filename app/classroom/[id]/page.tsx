@@ -12,7 +12,7 @@ export default function ClassroomPage({ params }: { params: { id: string } }) {
   const classroomId = use(params).id
 
   return (
-    <div className="min-h-screen w-full">
+    <div className="h-[calc(100dvh)] w-full">
       {role === 'teacher' ? (
         <TeacherDashboard classroomId={classroomId} />
       ) : (
