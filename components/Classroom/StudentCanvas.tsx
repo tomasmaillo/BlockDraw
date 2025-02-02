@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import supabase from '@/lib/supabase'
 import AnalysisOverlay from './AnalysisOverlay'
-import WaitingForNextRound from './WaitingForNextRound'
 import { RotateCcw, Trash2, Check } from 'lucide-react'
 
 const COLORS = [
@@ -38,9 +37,8 @@ const StudentCanvas = ({
       passed: boolean
     }>
   } | null>(null)
-  const [startTime] = useState(Date.now())
+  const [startTime, setStartTime] = useState(Date.now())
   const [currentExercise, setCurrentExercise] = useState<string | null>(null)
-  const [waitingForNextRound, setWaitingForNextRound] = useState(false)
 
   // Set canvas size on mount and window resize
   useEffect(() => {
@@ -84,7 +82,7 @@ const StudentCanvas = ({
     }
   }, [currentExercise])
 
-  // Add effect to listen for exercise selection
+  // Fetch the current exercise from DB so we know which round we're on
   useEffect(() => {
     const fetchExercise = async () => {
       const { data } = await supabase
@@ -96,7 +94,7 @@ const StudentCanvas = ({
       if (data) {
         if (data.test_started) {
           setCurrentExercise(data.current_exercise_id)
-          setWaitingForNextRound(false)
+          setStartTime(Date.now()) // reset the start time for new exercise
         } else {
           setCurrentExercise(null)
         }
@@ -105,7 +103,7 @@ const StudentCanvas = ({
 
     fetchExercise()
 
-    // Subscribe to changes
+    // Subscribe to changes in the "classrooms" table for this classroom
     const channel = supabase
       .channel('classroom_changes')
       .on(
@@ -117,25 +115,19 @@ const StudentCanvas = ({
           filter: `id=eq.${classroomId}`,
         },
         (payload) => {
-          console.log('Classroom change:', payload) // Debug log
+          console.log('Classroom change:', payload)
+          console.log('Current exercise state:', currentExercise)
+          console.log(
+            'New exercise from payload:',
+            payload.new.current_exercise_id
+          )
 
-          // Handle game start/stop
-          if (payload.new.test_started !== payload.old?.test_started) {
-            if (payload.new.test_started) {
-              setCurrentExercise(payload.new.current_exercise_id)
-              setWaitingForNextRound(false)
-            } else {
-              setCurrentExercise(null)
-            }
-          }
-          // Handle round changes
-          else if (
-            payload.new.current_exercise_id !== payload.old?.current_exercise_id
-          ) {
-            console.log('Round change detected') // Debug log
+          if (payload.new.current_exercise_id !== currentExercise) {
+            console.log('Round change detected')
             setCurrentExercise(payload.new.current_exercise_id)
-            setWaitingForNextRound(false)
             setResults(null)
+            setIsAnalyzing(false) // Hide overlay if it was open
+            setStartTime(Date.now())
 
             // Clear the canvas for the new round
             const canvas = canvasRef.current
@@ -155,7 +147,7 @@ const StudentCanvas = ({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [classroomId])
+  }, [classroomId, currentExercise])
 
   const startDrawing = (e: React.TouchEvent | React.MouseEvent) => {
     setIsDrawing(true)
@@ -241,8 +233,10 @@ const StudentCanvas = ({
     const ctx = canvas?.getContext('2d')
     if (!ctx || !canvas) return
 
+    // Save current state for undo
     setDrawingHistory((prev) => [...prev, [...drawingData]])
-    // Clear with white instead of transparent
+
+    // Clear with white
     ctx.fillStyle = 'white'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     setDrawingData([])
@@ -259,7 +253,7 @@ const StudentCanvas = ({
     setDrawingHistory((prev) => prev.slice(0, -1))
     setDrawingData(previousState)
 
-    // Redraw the canvas
+    // Redraw from that last saved state
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     let lastPoint: { x: number; y: number } | null = null
@@ -289,6 +283,9 @@ const StudentCanvas = ({
     })
   }
 
+  /**
+   * Creates a scaled-down version of the current canvas to reduce upload size.
+   */
   const resizeCanvas = (
     sourceCanvas: HTMLCanvasElement,
     maxWidth: number = 800,
@@ -300,7 +297,7 @@ const StudentCanvas = ({
     let width = sourceCanvas.width
     let height = sourceCanvas.height
 
-    // Calculate new dimensions while maintaining aspect ratio
+    // Keep aspect ratio
     if (width > height) {
       if (width > maxWidth) {
         height = Math.round((height * maxWidth) / width)
@@ -320,16 +317,28 @@ const StudentCanvas = ({
     return canvas
   }
 
+  /**
+   * Sends the drawing to /api/analyze-drawing
+   */
   const saveDrawing = useCallback(async () => {
+    // Show analyzing overlay
     setIsAnalyzing(true)
+
+    // If no current exercise, bail out
+    if (!currentExercise) {
+      alert('No exercise active right now!')
+      setIsAnalyzing(false)
+      return
+    }
+
     const canvas = canvasRef.current
     if (!canvas) return
 
     try {
-      // Resize canvas before converting to blob
+      // Resize for upload
       const resizedCanvas = resizeCanvas(canvas)
 
-      // Ensure white background on resized canvas
+      // White background
       const ctx = resizedCanvas.getContext('2d')
       if (ctx) {
         ctx.fillStyle = 'white'
@@ -338,31 +347,24 @@ const StudentCanvas = ({
       }
 
       // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
+      const blob = await new Promise<Blob>((resolve, reject) => {
         resizedCanvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              throw new Error('Failed to create blob')
+          (b) => {
+            if (!b) {
+              reject(new Error('Failed to create blob'))
+            } else {
+              resolve(b)
             }
-            resolve(blob)
           },
           'image/jpeg',
-          0.6 // Slightly increased quality
+          0.6
         )
       })
 
-      // Create FormData and append all required fields
       const formData = new FormData()
       formData.append('image', blob, 'drawing.jpg')
       formData.append('classroomId', classroomId)
 
-      // Log for debugging
-      console.log('Sending data:', {
-        classroomId,
-        blobSize: blob.size,
-      })
-
-      // Send to API
       const response = await fetch('/api/analyze-drawing', {
         method: 'POST',
         body: formData,
@@ -370,15 +372,13 @@ const StudentCanvas = ({
 
       if (!response.ok) {
         const errorData = await response.json()
-        console.error('API Error:', errorData)
         throw new Error(errorData.error || 'Failed to analyze drawing')
       }
 
       const data = await response.json()
-
       const timeTaken = Math.floor((Date.now() - startTime) / 1000)
 
-      // Save score to database
+      // Save the returned score in the DB
       await supabase.from('scores').insert({
         participant_id: studentId,
         exercise_id: data.exerciseId,
@@ -398,8 +398,9 @@ const StudentCanvas = ({
     } finally {
       setIsAnalyzing(false)
     }
-  }, [classroomId, studentId, startTime])
+  }, [classroomId, currentExercise, studentId, startTime])
 
+  // If no exercise is currently active, show waiting screen
   if (!currentExercise) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100dvh)] p-8 bg-gradient-to-br from-blue-400 via-purple-500 to-blue-500">
@@ -418,68 +419,64 @@ const StudentCanvas = ({
     )
   }
 
+  // Render the drawing canvas & submission button
   return (
-    // one view for waiting for next round and one for the canvas
     <>
-      {waitingForNextRound ? (
-        <WaitingForNextRound />
-      ) : (
-        <div className="flex flex-col h-[calc(100dvh)] w-full bg-purple-500">
-          <div className="flex flex-col flex-1 p-4 gap-4">
-            <div className="flex flex-wrap gap-2 justify-between shrink-0">
-              {COLORS.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => setColor(c.value)}
-                  className={`w-10 h-10 rounded-full border-4 ${
-                    color === c.value ? 'border-yellow-300' : 'border-gray-200'
-                  }`}
-                  style={{ backgroundColor: c.value }}
-                  aria-label={c.name}
-                />
-              ))}
-            </div>
-
-            <div className="relative flex-1 min-h-0">
-              <canvas
-                ref={canvasRef}
-                className="touch-none border-2 border-gray-200 rounded-lg w-full h-full bg-white"
-                onMouseDown={startDrawing}
-                onMouseUp={endDrawing}
-                onMouseOut={endDrawing}
-                onMouseMove={draw}
-                onTouchStart={startDrawing}
-                onTouchEnd={endDrawing}
-                onTouchMove={draw}
-              />
-              <div className="absolute top-4 right-4 flex flex-col gap-2 h-full">
-                <button
-                  onClick={undo}
-                  className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={drawingHistory.length === 0}>
-                  <RotateCcw className="w-5 h-5 text-gray-600" />
-                </button>
-                <button
-                  onClick={clearCanvas}
-                  className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-50 flex items-center justify-center">
-                  <Trash2 className="w-5 h-5 text-gray-600" />
-                </button>
-              </div>
-            </div>
-
-            <div className="font-montserrat font-bold shrink-0">
+      <div className="flex flex-col h-[calc(100dvh)] w-full bg-purple-500">
+        <div className="flex flex-col flex-1 p-4 gap-4">
+          <div className="flex flex-wrap gap-2 justify-between shrink-0">
+            {COLORS.map((c) => (
               <button
-                onClick={saveDrawing}
-                className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-                <Check className="w-4 h-4" />
-                Done
+                key={c.value}
+                onClick={() => setColor(c.value)}
+                className={`w-10 h-10 rounded-full border-4 ${
+                  color === c.value ? 'border-yellow-300' : 'border-gray-200'
+                }`}
+                style={{ backgroundColor: c.value }}
+                aria-label={c.name}
+              />
+            ))}
+          </div>
+
+          <div className="relative flex-1 min-h-0">
+            <canvas
+              ref={canvasRef}
+              className="touch-none border-2 border-gray-200 rounded-lg w-full h-full bg-white"
+              onMouseDown={startDrawing}
+              onMouseUp={endDrawing}
+              onMouseOut={endDrawing}
+              onMouseMove={draw}
+              onTouchStart={startDrawing}
+              onTouchEnd={endDrawing}
+              onTouchMove={draw}
+            />
+            <div className="absolute top-4 right-4 flex flex-col gap-2 h-full">
+              <button
+                onClick={undo}
+                className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={drawingHistory.length === 0}>
+                <RotateCcw className="w-5 h-5 text-gray-600" />
+              </button>
+              <button
+                onClick={clearCanvas}
+                className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-50 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-gray-600" />
               </button>
             </div>
           </div>
-        </div>
-      )}
 
-      {results && (
+          <div className="font-montserrat font-bold shrink-0">
+            <button
+              onClick={saveDrawing}
+              className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+              <Check className="w-4 h-4" />
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {(isAnalyzing || results) && (
         <AnalysisOverlay isAnalyzing={isAnalyzing} results={results} />
       )}
     </>
