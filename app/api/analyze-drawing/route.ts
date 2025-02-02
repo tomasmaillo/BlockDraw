@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     const imageBase64 = Buffer.from(await image.arrayBuffer()).toString(
       'base64'
     )
-    const imageUrl = `data:image/png;base64,${imageBase64}`
+    const imageUrl = `data:image/jpeg;base64,${imageBase64}`
 
     console.log('Analyzing drawing with OpenAI...')
     console.log('Validation rules:', exercise.validationRules)

@@ -65,6 +65,9 @@ const StudentCanvas = ({
       const ctx = canvas.getContext('2d')
       if (ctx) {
         ctx.scale(dpr, dpr)
+        // Fill canvas with white background
+        ctx.fillStyle = 'white'
+        ctx.fillRect(0, 0, rect.width, rect.height)
       }
     }
 
@@ -202,7 +205,9 @@ const StudentCanvas = ({
     if (!ctx || !canvas) return
 
     setDrawingHistory((prev) => [...prev, [...drawingData]])
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    // Clear with white instead of transparent
+    ctx.fillStyle = 'white'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
     setDrawingData([])
   }
 
@@ -255,17 +260,21 @@ const StudentCanvas = ({
     try {
       // Convert canvas to blob
       const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            throw new Error('Failed to create blob')
-          }
-          resolve(blob)
-        }, 'image/png')
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              throw new Error('Failed to create blob')
+            }
+            resolve(blob)
+          },
+          'image/jpeg',
+          0.8 // Quality parameter: 0.8 provides good balance of quality and file size
+        )
       })
 
       // Create FormData and append all required fields
       const formData = new FormData()
-      formData.append('image', blob, 'drawing.png')
+      formData.append('image', blob, 'drawing.jpg')
       formData.append('classroomId', classroomId)
 
       // Log for debugging
