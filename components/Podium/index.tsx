@@ -76,8 +76,10 @@ const Podium = ({ scores, onContinue }: PodiumProps) => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: rankIndex * 0.2 }}>
               <div className="text-white mb-2">
-                <p className="font-bold">{score.participant_name}</p>
-                <p className="text-sm">{score.score} points</p>
+                <p className="text-2xl font-montserrat font-bold">
+                  {score.participant_name}
+                </p>
+                <p className="text-sm opacity-75">{score.score} points</p>
                 <p className="text-xs opacity-75">{score.time_taken}s</p>
               </div>
               <div
