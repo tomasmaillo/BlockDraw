@@ -386,11 +386,35 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
 
       {showPodium && (
         <Podium
-          scores={scores.filter(
-            (score) =>
-              score.exercise_id === exercises[currentRound].id &&
-              score.classroom_id === classroomId
-          )}
+          scores={scores
+            .filter((score) => score.classroom_id === classroomId)
+            .reduce(
+              (acc, score) => {
+                // Find existing cumulative score for this participant
+                const existingScore = acc.find(
+                  (s) => s.participant_id === score.participant_id
+                )
+
+                if (existingScore) {
+                  // Update existing score
+                  existingScore.score += score.score
+                  existingScore.time_taken += score.time_taken
+                } else {
+                  // Add new cumulative score
+                  acc.push({
+                    participant_id: score.participant_id,
+                    score: score.score,
+                    time_taken: score.time_taken,
+                  })
+                }
+                return acc
+              },
+              [] as Array<{
+                participant_id: string
+                score: number
+                time_taken: number
+              }>
+            )}
           participants={participants}
           onContinue={proceedToNextRound}
         />
