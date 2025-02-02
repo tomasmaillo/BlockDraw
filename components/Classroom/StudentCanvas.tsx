@@ -96,7 +96,12 @@ const StudentCanvas = ({
         .single()
 
       if (data) {
-        setCurrentExercise(data.current_exercise_id)
+        // Only set currentExercise if the test has started
+        if (data.test_started) {
+          setCurrentExercise(data.current_exercise_id)
+        } else {
+          setCurrentExercise(null)
+        }
       }
     }
 
@@ -114,7 +119,47 @@ const StudentCanvas = ({
           filter: `id=eq.${classroomId}`,
         },
         (payload) => {
-          setCurrentExercise(payload.new.current_exercise_id)
+          // Only set currentExercise if test_started is true
+          if (payload.new.test_started) {
+            setCurrentExercise(payload.new.current_exercise_id)
+          } else {
+            setCurrentExercise(null)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [classroomId])
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('classroom_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'classrooms',
+          filter: `id=eq.${classroomId}`,
+        },
+        (payload) => {
+          // When the current_exercise_id changes, it means a new round has started
+          if (payload.new.current_exercise_id !== payload.old?.current_exercise_id) {
+            setWaitingForNextRound(false)
+            setResults(null)
+            // Clear the canvas for the new round
+            const canvas = canvasRef.current
+            const ctx = canvas?.getContext('2d')
+            if (ctx && canvas) {
+              ctx.fillStyle = 'white'
+              ctx.fillRect(0, 0, canvas.width, canvas.height)
+            }
+            setDrawingData([])
+            setDrawingHistory([])
+          }
         }
       )
       .subscribe()
