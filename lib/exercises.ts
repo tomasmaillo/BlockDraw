@@ -97,26 +97,8 @@ export const exercises: Exercise[] = [
       'Brown stick arms',
     ]
   },
-  
-  {
-    id: '123e4567-e89b-12d3-a456-426614174000',
-    name: 'Basic Shapes',
-    instructions: ['Draw a circle', 'Draw a square'],
-    validationRules: [
-      { check: 'Check if there is a circular shape' },
-      { check: 'Check if there is a rectangular shape' }
-    ]
-  },
-  {
-    id: '223e4567-e89b-12d3-a456-426614174000',
-    name: 'Advanced Shapes',
-    instructions: ['Draw a triangle', 'Draw a star'],
-    validationRules: [
-      { check: 'Check if there is a triangular shape' },
-      { check: 'Check if there is a star shape' }
-    ]
-  },
-  
+
+    
 
   {
     id: '423e4567-e89b-12d3-a456-426614174000',
@@ -183,4 +165,7 @@ export const exercises: Exercise[] = [
       }
     ]
   }
+  
+  
+
 ] 
