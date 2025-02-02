@@ -17,7 +17,6 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   const [showPracticeModal, setShowPracticeModal] = useState(false)
   const [showPodium, setShowPodium] = useState(false)
 
-
   const startGame = async () => {
     console.log('Starting game...') // Debug log
     try {
@@ -323,8 +322,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
-          className="fixed inset-0 flex items-center justify-center z-50"
-        >
+          className="fixed inset-0 flex items-center justify-center z-50">
           <div className="z-100 font-bold bg-yellow-300 text-black p-4 text-center shadow-lg rounded-lg">
             Practice Round! Get ready!
           </div>
@@ -368,7 +366,10 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
                   currentSubmissions={currentSubmissions}
                   gameStarted={true}
                 />
-                {allSubmitted && (
+
+                {participants.every((participant) =>
+                  currentSubmissions.includes(participant.id)
+                ) && (
                   <motion.button
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -386,8 +387,11 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
       {showPodium && (
         <Podium
           scores={scores.filter(
-            (s) => s.exercise_id === exercises[currentRound].id
+            (score) =>
+              score.exercise_id === exercises[currentRound].id &&
+              score.classroom_id === classroomId
           )}
+          participants={participants}
           onContinue={proceedToNextRound}
         />
       )}

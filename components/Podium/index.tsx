@@ -1,15 +1,23 @@
 import { motion } from 'framer-motion'
 import { Trophy } from 'lucide-react'
+import { useMemo } from 'react'
 
+// Types for clarity
 type Score = {
   participant_id: string
-  participant_name: string
+  participant_name?: string
   score: number
   time_taken: number
 }
 
+type Participant = {
+  id: string
+  name: string
+}
+
 interface PodiumProps {
   scores: Score[]
+  participants: Participant[]
   onContinue: () => void
 }
 
@@ -20,31 +28,61 @@ const COLORS = {
   other: '#A1A1AA',
 }
 
-const Podium = ({ scores, onContinue }: PodiumProps) => {
-  // Sort scores by score (descending) and time_taken (ascending)
-  const sortedScores = [...scores].sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score
-    return a.time_taken - b.time_taken
-  })
+const Podium = ({ scores, participants, onContinue }: PodiumProps) => {
+  // 1. No fetching from Supabase here. We already have participants from props.
 
-  // Group scores by rank (handling ties)
-  const rankedScores = sortedScores.reduce((acc, score, idx) => {
-    if (idx === 0) {
-      acc.push([score])
+  // 2. Build enriched scores: add a `participant_name` from participants[] if missing
+  const enrichedScores = useMemo(() => {
+    return scores.map((score) => {
+      // Attempt to find participant name
+      const participant = participants.find(
+        (p) => p.id === score.participant_id
+      )
+      return {
+        ...score,
+        participant_name: participant?.name ?? 'Unknown',
+      }
+    })
+  }, [scores, participants])
+
+  // 3. Sort by highest score, then by lowest time
+  const sortedScores = useMemo(() => {
+    if (enrichedScores.length === 0) return []
+    return [...enrichedScores].sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return a.time_taken - b.time_taken
+    })
+  }, [enrichedScores])
+
+  // 4. Group for ties
+  const rankedScores = useMemo(() => {
+    if (sortedScores.length === 0) return []
+    return sortedScores.reduce((acc, score, idx) => {
+      if (idx === 0) {
+        acc.push([score])
+      } else {
+        const prevScore = sortedScores[idx - 1]
+        if (
+          prevScore.score === score.score &&
+          prevScore.time_taken === score.time_taken
+        ) {
+          acc[acc.length - 1].push(score)
+        } else {
+          acc.push([score])
+        }
+      }
       return acc
-    }
+    }, [] as Score[][])
+  }, [sortedScores])
 
-    const prevScore = sortedScores[idx - 1]
-    if (
-      prevScore.score === score.score &&
-      prevScore.time_taken === score.time_taken
-    ) {
-      acc[acc.length - 1].push(score)
-    } else {
-      acc.push([score])
-    }
-    return acc
-  }, [] as Score[][])
+  // 5. If no ranked scores, show loading
+  if (!rankedScores.length) {
+    return (
+      <div className="fixed inset-0 bg-blue-500 bg-opacity-95 flex items-center justify-center z-50">
+        <div className="text-white text-2xl">Loading scores...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 bg-blue-500 bg-opacity-95 flex flex-col items-center justify-center z-50">
@@ -68,7 +106,7 @@ const Podium = ({ scores, onContinue }: PodiumProps) => {
               ? COLORS.bronze
               : COLORS.other
 
-          return rankGroup.map((score, groupIndex) => (
+          return rankGroup.map((score) => (
             <motion.div
               key={score.participant_id}
               className="flex flex-col items-center"
