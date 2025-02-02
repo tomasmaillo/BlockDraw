@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import supabase from '@/lib/supabase'
 import AnalysisOverlay from './AnalysisOverlay'
+import WaitingForNextRound from './WaitingForNextRound'
 import { RotateCcw, Trash2, Check } from 'lucide-react'
 
 const COLORS = [
@@ -39,6 +40,9 @@ const StudentCanvas = ({
   } | null>(null)
   const [startTime] = useState(Date.now())
   const [currentExercise, setCurrentExercise] = useState<string | null>(null)
+  const [waitingForNextRound, setWaitingForNextRound] = useState(false)
+
+  
 
   // Set canvas size on mount and window resize
   useEffect(() => {
@@ -360,10 +364,10 @@ const StudentCanvas = ({
       console.error('Analysis failed:', error)
     } finally {
       setIsAnalyzing(false)
+   
     }
   }, [classroomId, studentId, startTime])
 
-  // Add a loading state when no exercise is selected
   if (!currentExercise) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100dvh)] p-8 bg-gradient-to-br from-blue-400 via-purple-500 to-blue-500">
@@ -383,65 +387,71 @@ const StudentCanvas = ({
   }
 
   return (
+    // one view for waiting for next round and one for the canvas
     <>
-      <div className="flex flex-col h-[calc(100dvh)] w-full bg-purple-500">
-        <div className="flex flex-col flex-1 p-4 gap-4">
-          <div className="flex flex-wrap gap-2 justify-between shrink-0">
-            {COLORS.map((c) => (
-              <button
-                key={c.value}
-                onClick={() => setColor(c.value)}
-                className={`w-10 h-10 rounded-full border-4 ${
-                  color === c.value ? 'border-yellow-300' : 'border-gray-200'
-                }`}
-                style={{ backgroundColor: c.value }}
-                aria-label={c.name}
-              />
-            ))}
-          </div>
+      {waitingForNextRound ? (
+        <WaitingForNextRound />
+      ) : (
+        <div className="flex flex-col h-[calc(100dvh)] w-full bg-purple-500">
+          <div className="flex flex-col flex-1 p-4 gap-4">
+            <div className="flex flex-wrap gap-2 justify-between shrink-0">
+              {COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => setColor(c.value)}
+                  className={`w-10 h-10 rounded-full border-4 ${
+                    color === c.value ? 'border-yellow-300' : 'border-gray-200'
+                  }`}
+                  style={{ backgroundColor: c.value }}
+                  aria-label={c.name}
+                />
+              ))}
+            </div>
 
-          <div className="relative flex-1 min-h-0">
-            <canvas
-              ref={canvasRef}
-              className="touch-none border-2 border-gray-200 rounded-lg w-full h-full bg-white"
-              onMouseDown={startDrawing}
-              onMouseUp={endDrawing}
-              onMouseOut={endDrawing}
-              onMouseMove={draw}
-              onTouchStart={startDrawing}
-              onTouchEnd={endDrawing}
-              onTouchMove={draw}
-            />
-            <div className="absolute top-4 right-4 flex flex-col gap-2 h-full">
+            <div className="relative flex-1 min-h-0">
+              <canvas
+                ref={canvasRef}
+                className="touch-none border-2 border-gray-200 rounded-lg w-full h-full bg-white"
+                onMouseDown={startDrawing}
+                onMouseUp={endDrawing}
+                onMouseOut={endDrawing}
+                onMouseMove={draw}
+                onTouchStart={startDrawing}
+                onTouchEnd={endDrawing}
+                onTouchMove={draw}
+              />
+              <div className="absolute top-4 right-4 flex flex-col gap-2 h-full">
+                <button
+                  onClick={undo}
+                  className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={drawingHistory.length === 0}>
+                  <RotateCcw className="w-5 h-5 text-gray-600" />
+                </button>
+                <button
+                  onClick={clearCanvas}
+                  className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-50 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+            </div>
+
+            <div className="font-montserrat font-bold shrink-0">
               <button
-                onClick={undo}
-                className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={drawingHistory.length === 0}>
-                <RotateCcw className="w-5 h-5 text-gray-600" />
-              </button>
-              <button
-                onClick={clearCanvas}
-                className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-50 flex items-center justify-center">
-                <Trash2 className="w-5 h-5 text-gray-600" />
+                onClick={saveDrawing}
+                className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+                <Check className="w-4 h-4" />
+                Done
               </button>
             </div>
           </div>
-
-          <div className="font-montserrat font-bold shrink-0">
-            <button
-              onClick={saveDrawing}
-              className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-              <Check className="w-4 h-4" />
-              Done
-            </button>
-          </div>
         </div>
-      </div>
+      )}
 
       <AnalysisOverlay
         isAnalyzing={isAnalyzing}
         results={results || undefined}
         onClose={() => setResults(null)}
+        setWaitingForNextRound={setWaitingForNextRound}
       />
     </>
   )

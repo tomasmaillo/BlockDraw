@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
+import WaitingForNextRound from './WaitingForNextRound'
 
 const AnalysisOverlay = ({
   isAnalyzing,
   results,
   onClose,
+  setWaitingForNextRound,
 }: {
-  isAnalyzing: boolean
+  isAnalyzing: boolean,
+  setWaitingForNextRound: (waiting: boolean) => void
   results?: {
     score: number
     total: number
@@ -18,12 +21,16 @@ const AnalysisOverlay = ({
   onClose: () => void
 }) => {
   const [showConfetti, setShowConfetti] = useState(false)
-
+  
   useEffect(() => {
     if (results && results.score === results.total) {
       setShowConfetti(true)
     }
   }, [results])
+
+  // if (waitingForNextRound) {
+  //   return <WaitingForNextRound />
+  // }
 
   if (!isAnalyzing && !results) return null
 
@@ -65,7 +72,10 @@ const AnalysisOverlay = ({
                 Time taken: {results.timeTaken} seconds
               </p>
               <button
-                onClick={onClose}
+                onClick={() => {
+                  setWaitingForNextRound(true)
+                  onClose()
+                }}
                 className="bg-blue-500 text-white px-6 py-2 rounded-full">
                 Continue
               </button>
