@@ -18,18 +18,18 @@ export async function POST(req: Request) {
       hasImage: !!image,
       imageType: image?.type,
       imageSize: image?.size,
-      classroomId
+      classroomId,
     })
 
     if (!image || !classroomId) {
       return NextResponse.json(
-        { 
+        {
           error: 'Missing required fields',
           details: {
             image: !!image,
-            classroomId: !!classroomId
-          }
-        }, 
+            classroomId: !!classroomId,
+          },
+        },
         { status: 400 }
       )
     }
@@ -60,18 +60,26 @@ export async function POST(req: Request) {
       (ex) => ex.id === classroom.current_exercise_id
     )
     if (!exercise) {
-      console.log('Current exercise ID:', classroom.current_exercise_id);
-      console.log('Available exercise IDs:', exercises.map(ex => ex.id));
+      console.log('Current exercise ID:', classroom.current_exercise_id)
+      console.log(
+        'Available exercise IDs:',
+        exercises.map((ex) => ex.id)
+      )
       return NextResponse.json({ error: 'Exercise not found' }, { status: 404 })
     }
 
-    console.log('Found exercise:', exercise);
+    console.log('Found exercise:', exercise)
 
     // Convert blob to base64 for OpenAI API
     const imageBase64 = Buffer.from(await image.arrayBuffer()).toString(
       'base64'
     )
     const imageUrl = `data:image/png;base64,${imageBase64}`
+
+    console.log('Analyzing drawing with OpenAI...')
+    console.log('Validation rules:', exercise.validationRules)
+    console.log('Short rules:', exercise.shortRules)
+    console.log('Image URL:', imageUrl)
 
     // Analyze with OpenAI
     const response = await openai.chat.completions.create({
@@ -85,11 +93,11 @@ export async function POST(req: Request) {
               text:
                 'Analyze this drawing. For each of the following criteria, check if the drawing meets the criteria:\n' +
                 exercise.validationRules.map((rule) => rule.check).join('\n') +
-                '\n\nThese are human drawings (e.g if a circle is not perfect, still return TRUE). Return a series of TRUE or FALSE values for each of the criteria. Separate each value with a space.'
+                '\n\nThese are human drawings (e.g if a circle is not perfect, still return TRUE). Return a series of TRUE or FALSE values for each of the criteria. Separate each value with a space.',
             },
             {
               type: 'image_url',
-              image_url: { url: imageUrl },
+              image_url: { url: imageUrl, detail: 'high' },
             },
           ],
         },
@@ -103,14 +111,14 @@ export async function POST(req: Request) {
     // Map the checks to validation rules, but use shortRules for display
     const validationResults = checks.map((check, index) => ({
       rule: exercise.shortRules[index],
-      passed: check.toUpperCase() === 'TRUE'
+      passed: check.toUpperCase() === 'TRUE',
     }))
 
     return NextResponse.json({
       exerciseId: exercise.id,
-      score: checks.filter(c => c.toUpperCase() === 'TRUE').length,
+      score: checks.filter((c) => c.toUpperCase() === 'TRUE').length,
       total: exercise.validationRules.length,
-      validationResults
+      validationResults,
     })
   } catch (error) {
     console.error('Analysis error:', error)
