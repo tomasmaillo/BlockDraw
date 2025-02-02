@@ -102,70 +102,52 @@ export const exercises: Exercise[] = [
 
   {
     id: '423e4567-e89b-12d3-a456-426614174000',
-    name: 'Draw a House 🏠',
+    name: 'Draw a Flower 🌸',
     instructions: [
-        {
-          type: 'motion',
-          content: 'Start near the bottom of the screen',
-          children: [
-            '',
-          ]
-        },
-        
-        'Change pen color to black',
-      
-        {
-          type: 'repeat',
-          content: 'Repeat (3)',
-          children: [
-            {
-              type: 'motion',
-              content: 'Move up a little from the previous shape',
-            },
-            'Draw a circle [icon:circle] larger than the last one',
-            {
-              type: 'if',
-              content: 'If this is the 1st circle added:',
-              children: [
-                'Change pen color to brown',
-                'Draw a rectangle [icon:square] attached below the circle',
-                'Change pen color to black',
-              ]
-            },
-            {
-              type: 'if',
-              content: 'If this is the 2nd circle added:',
-              children: [
-                'Change pen color to red',
-                'Draw 3 small circles [icon:circle] around the big circle',
-                'Change pen color to black',
-              ]
-            }
-          ]
-        }
-    
-      
+      'Start at the bottom of the screen',
+      'Change pen color to green',
+      'Draw a line [icon:line] pointing up',
+      'Change pen color to orange',
+      'Draw a circle [icon:circle]',
+      'Change pen color to blue',
+      {
+        type: 'repeat',
+        content: 'Repeat (6)',
+        children: [
+          {
+            type: 'if',
+            content: 'If the repeat number is divisible by 2:',
+            children: [
+              'Change pen color to red',
+              'Draw an oval [icon:circle] coming out of the circle',
+          
+            ]
+          },
+          {
+            type: 'if',
+            content: 'Else:',
+            children: [
+              'Change pen color to blue',
+              'draw an oval [icon:circle] coming out of the circle'
+            ]
+          },
+          'Rotate 60 degrees clockwise around the circle'
+        ]
+      }
     ],
     validationRules: [
-      {
-        description: 'Has basic house shape',
-        check: 'The image should contain a square/rectangle base with a triangle on top forming a roof'
-      },
-      {
-        description: 'Has door',
-        check: 'There should be a rectangular door in the base of the house'
-      },
-      {
-        description: 'Has windows',
-        check: 'There should be at least two square/rectangular windows in the house'
-      },
-      {
-        description: 'Has chimney',
-        check: 'There should be a rectangular chimney on the sloped roof'
-      }
+      { check: 'Check there is one green vertical line for the stem' },
+      { check: 'Check there is an orange circle above the stem' },
+      { check: 'Check there are exactly 6 petals arranged in a circular pattern around the circle' },
+      { check: 'Check that alternating petals are red and blue' },
+      { check: 'Check that the petals are fairly evenly spaced around the circle(60 degrees apart)' }
+    ],
+    shortRules: [
+      'Green stem',
+      'Orange circle',
+      '6 petals',
+      'Alternating red and blue petals',
     ]
   }
-  
-  
 
 ] 
