@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import supabase from '@/lib/supabase'
 import { exercises } from '@/lib/exercises'
-// import { writeFile } from 'fs/promises'
-// import path from 'path'
+import { writeFile } from 'fs/promises'
+import path from 'path'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -36,21 +36,21 @@ export async function POST(req: Request) {
     const imageUrl = `data:${image.type};base64,${imageBase64}`
 
     // Debug: Log first 100 characters of base64 string
-    // console.log('Base64 preview:', imageBase64.substring(0, 100) + '...')
+    console.log('Base64 preview:', imageBase64.substring(0, 100) + '...')
 
-    // // Optional: Save to public directory (this will work in development)
-    // try {
-    //   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-    //   const filename = `debug-${timestamp}-${classroomId}.jpg`
-    //   const publicPath = path.join(process.cwd(), 'public', 'debug-images')
+    // Optional: Save to public directory (this will work in development)
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const filename = `debug-${timestamp}-${classroomId}.jpg`
+      const publicPath = path.join(process.cwd(), 'public', 'debug-images')
 
-    //   // Save actual image file
-    //   await writeFile(path.join(publicPath, filename), buffer)
+      // Save actual image file
+      await writeFile(path.join(publicPath, filename), buffer)
 
-    //   console.log('Debug image saved:', `/debug-images/${filename}`)
-    // } catch (error) {
-    //   console.error('Failed to save debug image:', error)
-    // }
+      console.log('Debug image saved:', `/debug-images/${filename}`)
+    } catch (error) {
+      console.error('Failed to save debug image:', error)
+    }
 
     // Get current exercise for the classroom
     const { data: classroom, error } = await supabase

@@ -11,6 +11,37 @@ export interface Exercise {
 }
 
 export const exercises: Exercise[] = [
+
+  {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    name: 'Practice Round',
+    instructions: [
+      'Start at the bottom of the screen',
+      'Change pen color to green',
+      'Draw a triangle [icon:triangle]',
+      {
+        type: 'repeat',
+        content: 'Repeat (2)',
+        children: [
+          'Move up from the previous shape',
+          'Draw a triangle [icon:triangle] smaller than the previous one',
+        ]
+      }
+    ],
+    validationRules: [
+      { check: 'Check there are 3 triangles' },
+      { check: 'Check the triangles are smaller than the previous one' },
+      { check: 'Check the triangles are green' },
+      { check: 'Check the triangles are stacked vertically' },
+    ],
+    shortRules: [
+      '3 triangles',
+      'Triangles decrease in size',
+      'Triangles are green',
+      'Triangles are stacked vertically',
+    ]
+
+  },
   {
     id: '323e4567-e89b-12d3-a456-426614174000',
     name: 'Draw a Snowman ⛄',

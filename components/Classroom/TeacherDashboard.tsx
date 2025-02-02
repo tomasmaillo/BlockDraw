@@ -14,7 +14,9 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
   const [scores, setScores] = useState<any[]>([])
   const [currentSubmissions, setCurrentSubmissions] = useState<string[]>([])
   const [allSubmitted, setAllSubmitted] = useState(false)
+  const [showPracticeModal, setShowPracticeModal] = useState(false)
   const [showPodium, setShowPodium] = useState(false)
+
 
   const startGame = async () => {
     console.log('Starting game...') // Debug log
@@ -267,11 +269,72 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
     }
   }, [classroomId])
 
+  useEffect(() => {
+    if (!gameStarted) return
+
+    // Fetch existing submissions for current round
+    const fetchCurrentSubmissions = async () => {
+      const { data } = await supabase
+        .from('scores')
+        .select('participant_id')
+        .eq('exercise_id', exercises[currentRound].id)
+
+      if (data) {
+        setCurrentSubmissions(data.map((score) => score.participant_id))
+      }
+    }
+
+    fetchCurrentSubmissions()
+
+    const subscription = supabase
+      .channel('scores_channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'scores',
+          filter: `exercise_id=eq.${exercises[currentRound].id}`,
+        },
+        (payload) => {
+          setCurrentSubmissions((prev) => [...prev, payload.new.participant_id])
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscription)
+    }
+  }, [currentRound, gameStarted, participants.length])
+
+  useEffect(() => {
+    if (gameStarted && currentRound === 0) {
+      setShowPracticeModal(true)
+      setTimeout(() => {
+        setShowPracticeModal(false)
+      }, 4000) // Modal will disappear after 6 seconds
+    }
+  }, [gameStarted, currentRound])
+
   return (
-    <div className="min-h-[calc(100dvh)] bg-blue-500 p-8 font-montserrat">
+    <div className="min-h-screen bg-blue-500 p-8 font-montserrat">
+      {showPracticeModal && (
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          className="fixed inset-0 flex items-center justify-center z-50"
+        >
+          <div className="z-100 font-bold bg-yellow-300 text-black p-4 text-center shadow-lg rounded-lg">
+            Practice Round! Get ready!
+          </div>
+        </motion.div>
+      )}
       <h2 className="text-4xl font-bold text-white mb-8 text-center">
         {gameStarted
-          ? `Round ${currentRound + 1} of ${exercises.length}`
+          ? currentRound === 0
+            ? 'Practice Round'
+            : `Round ${currentRound + 1} of ${exercises.length}`
           : 'Join the class!'}
       </h2>
 
