@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Trophy } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
+import { balloons } from 'balloons-js'
 
 // Types for clarity
 type Score = {
@@ -19,6 +20,7 @@ interface PodiumProps {
   scores: Score[]
   participants: Participant[]
   onContinue: () => void
+  isFinalRound?: boolean
 }
 
 const COLORS = {
@@ -28,7 +30,22 @@ const COLORS = {
   other: '#A1A1AA',
 }
 
-const Podium = ({ scores, participants, onContinue }: PodiumProps) => {
+const Podium = ({
+  scores,
+  participants,
+  onContinue,
+  isFinalRound = false,
+}: PodiumProps) => {
+  // Add useEffect for the balloons
+  useEffect(() => {
+    if (isFinalRound) {
+      // Launch balloons multiple times for extra fun! 🎈
+      balloons()
+      setTimeout(() => balloons(), 1000)
+      setTimeout(() => balloons(), 2000)
+    }
+  }, [isFinalRound])
+
   // 1. No fetching from Supabase here. We already have participants from props.
 
   // 2. Build enriched scores: add a `participant_name` from participants[] if missing
@@ -91,7 +108,18 @@ const Podium = ({ scores, participants, onContinue }: PodiumProps) => {
         animate={{ scale: 1, opacity: 1 }}
         className="text-center mb-12">
         <Trophy className="w-20 h-20 text-yellow-400 mx-auto mb-4" />
-        <h2 className="text-4xl font-bold text-white">Round Results!</h2>
+        <h2 className="text-4xl font-bold text-white">
+          {isFinalRound ? '🎉 GAME OVER! 🎉' : 'Round Results!'}
+        </h2>
+        {isFinalRound && rankedScores[0] && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mt-4 text-2xl text-yellow-300 font-bold">
+            🏆 Congratulations {rankedScores[0][0].participant_name}! 🏆
+          </motion.div>
+        )}
       </motion.div>
 
       <div className="flex justify-center items-end gap-4 mb-12">
@@ -148,7 +176,7 @@ const Podium = ({ scores, participants, onContinue }: PodiumProps) => {
         transition={{ delay: 1.5 }}
         onClick={onContinue}
         className="px-8 py-4 text-xl font-bold text-white bg-green-500 rounded-full hover:bg-green-600 transition-colors shadow-lg">
-        Continue to Next Round
+        {isFinalRound ? '🎮 Start New Game 🎮' : 'Continue to Next Round'}
       </motion.button>
     </div>
   )

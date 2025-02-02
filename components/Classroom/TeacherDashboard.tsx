@@ -417,6 +417,7 @@ const TeacherDashboard = ({ classroomId }: { classroomId: string }) => {
             )}
           participants={participants}
           onContinue={proceedToNextRound}
+          isFinalRound={currentRound === exercises.length - 1}
         />
       )}
     </div>
