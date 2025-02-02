@@ -252,15 +252,57 @@ const StudentCanvas = ({
     })
   }
 
+  const resizeCanvas = (
+    sourceCanvas: HTMLCanvasElement,
+    maxWidth: number = 800,
+    maxHeight: number = 800
+  ): HTMLCanvasElement => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+
+    let width = sourceCanvas.width
+    let height = sourceCanvas.height
+
+    // Calculate new dimensions while maintaining aspect ratio
+    if (width > height) {
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width)
+        width = maxWidth
+      }
+    } else {
+      if (height > maxHeight) {
+        width = Math.round((width * maxHeight) / height)
+        height = maxHeight
+      }
+    }
+
+    canvas.width = width
+    canvas.height = height
+
+    ctx?.drawImage(sourceCanvas, 0, 0, width, height)
+    return canvas
+  }
+
   const saveDrawing = useCallback(async () => {
     setIsAnalyzing(true)
     const canvas = canvasRef.current
     if (!canvas) return
 
     try {
+      // Resize canvas before converting to blob
+      const resizedCanvas = resizeCanvas(canvas)
+
+      // Ensure white background on resized canvas
+      const ctx = resizedCanvas.getContext('2d')
+      if (ctx) {
+        ctx.fillStyle = 'white'
+        ctx.fillRect(0, 0, resizedCanvas.width, resizedCanvas.height)
+        ctx.drawImage(canvas, 0, 0, resizedCanvas.width, resizedCanvas.height)
+      }
+
       // Convert canvas to blob
       const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob(
+        resizedCanvas.toBlob(
           (blob) => {
             if (!blob) {
               throw new Error('Failed to create blob')
@@ -268,7 +310,7 @@ const StudentCanvas = ({
             resolve(blob)
           },
           'image/jpeg',
-          0.8 // Quality parameter: 0.8 provides good balance of quality and file size
+          0.6 // Slightly increased quality
         )
       })
 

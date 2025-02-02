@@ -10,6 +10,9 @@
 !.yarn/releases
 !.yarn/versions
 
+# debug images
+/public/debug-images/*
+
 # testing
 /coverage
 
