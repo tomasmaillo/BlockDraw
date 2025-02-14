@@ -163,7 +163,7 @@ const Podium = ({
                   ? '🥈'
                   : rankIndex === 2
                   ? '🥉'
-                  : ''}
+                  : '‎'}
               </div>
             </motion.div>
           ))
