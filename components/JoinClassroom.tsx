@@ -9,6 +9,8 @@ import { PlusCircle } from 'lucide-react'
 export default function JoinClassroom() {
   const [joinCode, setJoinCode] = useState('')
   const router = useRouter()
+  const [isCreating, setIsCreating] = useState(false)
+  const [isJoining, setIsJoining] = useState(false)
 
   const generateSimpleId = () => {
     // Generate a 6-character alphanumeric ID (uppercase letters and numbers)
@@ -21,6 +23,9 @@ export default function JoinClassroom() {
   }
 
   const createClassroom = async () => {
+    if (isCreating) return
+    setIsCreating(true)
+
     try {
       const simpleCode = generateSimpleId()
       const { data, error } = await supabase
@@ -45,35 +50,53 @@ export default function JoinClassroom() {
       }
     } catch (error) {
       console.error('Failed to create classroom:', error)
+    } finally {
+      setIsCreating(false)
     }
   }
 
   const joinClassroom = async () => {
-    if (!joinCode.trim()) return
+    if (!joinCode.trim() || isJoining) return
+    setIsJoining(true)
 
-    const { data, error } = await supabase
-      .from('classrooms')
-      .select('id')
-      .eq('join_code', joinCode.trim().toUpperCase())
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('classrooms')
+        .select('id')
+        .eq('join_code', joinCode.trim().toUpperCase())
+        .single()
 
-    if (error || !data) {
-      console.error('Classroom not found')
-      return
+      if (error || !data) {
+        console.error('Classroom not found')
+        return
+      }
+
+      router.push(`/join/${data.id}`)
+    } finally {
+      setIsJoining(false)
     }
-
-    router.push(`/join/${data.id}`)
   }
 
   return (
     <div className="max-w-md mx-auto bg-white p-8 rounded-[2rem] shadow-lg">
-      <Image src="/logo.svg" alt="BlockDraw" width={300} height={300} className="mb-8" />
+      <Image
+        src="/logo.svg"
+        alt="BlockDraw"
+        width={300}
+        height={300}
+        className="mb-8"
+      />
 
       <button
         onClick={createClassroom}
-        className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-full mb-4 text-lg font-medium flex items-center justify-center gap-2 transition-colors">
+        disabled={isCreating}
+        className={`w-full ${
+          isCreating
+            ? 'bg-green-400 cursor-not-allowed'
+            : 'bg-green-500 hover:bg-green-600'
+        } text-white py-3 rounded-full mb-4 text-lg font-medium flex items-center justify-center gap-2 transition-colors`}>
         <PlusCircle size={24} />
-        Create Classroom
+        {isCreating ? 'Creating...' : 'Create Classroom'}
       </button>
 
       <div className="relative my-8 text-center">
@@ -89,13 +112,18 @@ export default function JoinClassroom() {
           placeholder="Enter Class Code"
           value={joinCode}
           onChange={(e) => setJoinCode(e.target.value)}
-            className="w-full border-2 border-gray-200 rounded-full px-6 py-3 text-lg focus:outline-none focus:border-blue-400 transition-colors"
-          />
+          className="w-full border-2 border-gray-200 rounded-full px-6 py-3 text-lg focus:outline-none focus:border-blue-400 transition-colors"
+        />
         <button
           onClick={joinClassroom}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-full text-lg font-medium flex items-center justify-center gap-2 transition-colors">
+          disabled={isJoining}
+          className={`w-full ${
+            isJoining
+              ? 'bg-blue-400 cursor-not-allowed'
+              : 'bg-blue-500 hover:bg-blue-600'
+          } text-white py-3 rounded-full text-lg font-medium flex items-center justify-center gap-2 transition-colors`}>
           <Users size={24} />
-          Join Classroom
+          {isJoining ? 'Joining...' : 'Join Classroom'}
         </button>
       </div>
     </div>

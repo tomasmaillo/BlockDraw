@@ -8,31 +8,37 @@ import { ArrowRight } from 'lucide-react'
 export default function JoinPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [name, setName] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
 
-    const { data, error } = await supabase
-      .from('participants')
-      .insert([
-        {
-          classroom_id: params.id,
-          name: name.trim(),
-          role: 'student',
-        },
-      ])
-      .select()
-      .single()
+    setIsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('participants')
+        .insert([
+          {
+            classroom_id: params.id,
+            name: name.trim(),
+            role: 'student',
+          },
+        ])
+        .select()
+        .single()
 
-    if (error) {
-      console.error('Error inserting participant:', error)
-      return
-    }
+      if (error) {
+        console.error('Error inserting participant:', error)
+        return
+      }
 
-    if (data) {
-      console.log('Successfully inserted participant:', data)
-      router.push(`/classroom/${params.id}?role=student&studentId=${data.id}`)
+      if (data) {
+        console.log('Successfully inserted participant:', data)
+        router.push(`/classroom/${params.id}?role=student&studentId=${data.id}`)
+      }
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -59,8 +65,10 @@ export default function JoinPage({ params }: { params: { id: string } }) {
           </div>
           <button
             type="submit"
-            className="font-bold rounded-[2rem] w-full px-4 py-3 text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium">
-            Join <ArrowRight className="inline" size={24} />
+            disabled={isLoading}
+            className="font-bold rounded-[2rem] w-full px-4 py-3 text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            {isLoading ? 'Joining...' : 'Join'}{' '}
+            <ArrowRight className="inline" size={24} />
           </button>
         </form>
       </div>
